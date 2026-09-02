@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="せどりAI" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <title>せどりAI</title>
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--text:#111827;--muted:#6b7280;--line:#e5e7eb;--buy:#067647;--watch:#b54708;--pass:#b42318;--accent:#2563eb}
+    *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text)}
+    header{position:sticky;top:0;z-index:5;background:rgba(17,24,39,.96);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 14px} header h1{font-size:20px;margin:0} header p{font-size:12px;margin:4px 0 0;color:#d1d5db}
+    main{max-width:760px;margin:auto;padding:14px 14px calc(90px + env(safe-area-inset-bottom))}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+    h2{font-size:16px;margin:0 0 10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:560px){.grid{grid-template-columns:1fr}}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}input,select{width:100%;font-size:16px;padding:12px;border:1px solid #d1d5db;border-radius:11px;background:#fff;color:#111827}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{appearance:none;border:0;border-radius:12px;padding:13px 14px;font-size:15px;font-weight:700;background:#e5e7eb;color:#111827;text-align:center;text-decoration:none;display:block}.btn.primary{background:var(--accent);color:white}.btn.danger{background:#fee4e2;color:#912018}.btn.full{grid-column:1/-1}
+    .result{display:none}.verdict{font-size:34px;font-weight:900;letter-spacing:.5px}.verdict.buy{color:var(--buy)}.verdict.watch{color:var(--watch)}.verdict.pass{color:var(--pass)}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.metric{background:#f9fafb;border-radius:12px;padding:10px}.metric span{display:block;font-size:11px;color:var(--muted)}.metric b{font-size:18px}
+    .scorebar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:10px}.scorebar>div{height:100%;background:var(--accent);width:0}
+    .small{font-size:12px;color:var(--muted);line-height:1.5}.history-item{padding:10px 0;border-top:1px solid var(--line)}.history-head{display:flex;justify-content:space-between;gap:8px}.pill{font-weight:800;font-size:12px;border-radius:999px;padding:4px 8px;background:#f3f4f6}
+    nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:6}nav button{flex:1;max-width:220px;border:0;background:#f3f4f6;border-radius:12px;padding:10px;font-weight:700}.hide{display:none!important}.notice{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e;border-radius:12px;padding:10px;font-size:12px}
+  </style>
+</head>
+<body>
+<header><h1>せどりAI</h1><p>予算5万円｜西宮50km｜利益・リスク自動判定</p></header>
+<main>
+  <section id="judgePanel">
+    <div class="card">
+      <h2>商品を判定</h2>
+      <div class="grid">
+        <div><label>仕入元</label><select id="source"><option value="mercari">メルカリ</option><option value="yahoo_fleamarket">Yahoo!フリマ</option><option value="jmty">ジモティー</option></select></div>
+        <div><label>カテゴリ</label><select id="category"><option value="wallet">財布</option><option value="accessory">アクセサリー</option><option value="apparel">アパレル</option><option value="precious_metals">貴金属</option></select></div>
+        <div><label>商品名 / 型番</label><input id="title" placeholder="例: Louis Vuitton M61697" /></div>
+        <div><label>商品URL</label><input id="url" inputmode="url" placeholder="https://..." /></div>
+        <div><label>仕入価格（円）</label><input id="buy" type="number" min="0" step="500" value="0" /></div>
+        <div><label>想定売価（円）</label><input id="sell" type="number" min="0" step="500" value="0" /></div>
+        <div><label>送料（円）</label><input id="shipping" type="number" min="0" step="50" value="750" /></div>
+        <div><label>その他原価（円）</label><input id="other" type="number" min="0" step="100" value="0" /></div>
+        <div><label>真贋リスク</label><select id="auth"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
+        <div><label>状態リスク</label><select id="cond"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
+        <div><label>相場比較件数</label><input id="comps" type="number" min="0" step="1" value="3" /></div>
+        <div id="distanceWrap" class="hide"><label>西宮市からの距離（km）</label><input id="distance" type="number" min="0" step="1" value="0" /></div>
+        <div id="paymentWrap" class="hide"><label>ジモティー決済</label><select id="payment"><option value="online">オンライン決済</option><option value="cash">現金手渡し</option></select></div>
+      </div>
+      <div class="actions" style="margin-top:12px"><button class="btn primary full" id="judgeBtn">判定する</button></div>
+    </div>
+    <div class="card result" id="resultCard">
+      <div class="verdict" id="verdict"></div>
+      <div class="metrics"><div class="metric"><span>期待利益</span><b id="profit"></b></div><div class="metric"><span>利益率</span><b id="margin"></b></div><div class="metric"><span>スコア</span><b id="score"></b></div></div>
+      <div class="scorebar"><div id="scoreFill"></div></div><p class="small" id="reason"></p>
+      <div class="actions"><button class="btn primary" id="saveBtn">候補に保存</button><a class="btn" id="openItem" target="_blank" rel="noopener">商品ページ</a></div>
+    </div>
+  </section>
+
+  <section id="searchPanel" class="hide">
+    <div class="card"><h2>商品検索</h2><label>ブランド・商品名</label><input id="searchQ" placeholder="例: Cartier リング" /><div class="actions" style="margin-top:12px"><a class="btn" id="mercariLink" target="_blank">メルカリ</a><a class="btn" id="yahooLink" target="_blank">Yahoo!フリマ</a><a class="btn full" id="jmtyLink" target="_blank">ジモティー</a></div><p class="small">検索先を開いて候補を見つけたら「判定」に戻って価格・相場を入力してください。</p></div>
+    <div class="notice">ジモティーは規約上、自動クロールせず、検索リンクから確認する設計です。</div>
+  </section>
+
+  <section id="historyPanel" class="hide">
+    <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h2>保存した候補</h2><span class="small" id="historyCount"></span></div><div id="history"></div><div class="actions" style="margin-top:10px"><button class="btn" id="exportBtn">CSVを書き出す</button><label class="btn" style="cursor:pointer">CSVを読み込む<input id="importFile" type="file" accept=".csv,text/csv" style="display:none"></label><button class="btn danger full" id="clearBtn">履歴を全削除</button></div></div>
+  </section>
+</main>
+<nav><button data-tab="judgePanel">判定</button><button data-tab="searchPanel">検索</button><button data-tab="historyPanel">候補</button></nav>
+<script src="app.js"></script>
+</body>
+</html>

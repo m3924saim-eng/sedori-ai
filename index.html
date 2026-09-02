@@ -26,13 +26,15 @@
   </style>
 </head>
 <body>
-<header><h1>せどりAI</h1><p>予算5万円｜西宮50km｜利益・リスク自動判定</p></header>
+<header><h1>せどりAI</h1><p>予算5万円｜西宮50km｜複数サイト横断・利益/リスク判定</p></header>
 <main>
   <section id="judgePanel">
     <div class="card">
       <h2>商品を判定</h2>
       <div class="grid">
-        <div><label>仕入元</label><select id="source"><option value="mercari">メルカリ</option><option value="yahoo_fleamarket">Yahoo!フリマ</option><option value="jmty">ジモティー</option></select></div>
+        <div><label>仕入元</label><select id="source"><option value="mercari">メルカリ</option><option value="rakuma">楽天ラクマ</option><option value="yahoo_fleamarket">Yahoo!フリマ</option><option value="yahoo_auction">Yahoo!オークション</option><option value="jmty">ジモティー</option><option value="mobaoku">モバオク</option></select></div>
+        <div><label>販売先</label><select id="sellChannel"><option value="yahoo_fleamarket">Yahoo!フリマ</option><option value="mercari">メルカリ</option><option value="rakuma">楽天ラクマ</option><option value="yahoo_auction">Yahoo!オークション</option><option value="mobaoku">モバオク</option><option value="jmty">ジモティー</option></select></div>
+        <div><label>販売手数料率（%）</label><input id="feeRate" type="number" min="0" max="30" step="0.1" value="5" /><p class="small" style="margin:4px 0 0">販売先変更時に標準値を自動設定。キャンペーン・会員条件は実際の料率に修正。</p></div>
         <div><label>カテゴリ</label><select id="category"><option value="wallet">財布</option><option value="accessory">アクセサリー</option><option value="apparel">アパレル</option><option value="precious_metals">貴金属</option></select></div>
         <div><label>商品名 / 型番</label><input id="title" placeholder="例: Louis Vuitton M61697" /></div>
         <div><label>商品URL</label><input id="url" inputmode="url" placeholder="https://..." /></div>
@@ -44,7 +46,7 @@
         <div><label>状態リスク</label><select id="cond"><option value="low">低</option><option value="medium" selected>中</option><option value="high">高</option></select></div>
         <div><label>相場比較件数</label><input id="comps" type="number" min="0" step="1" value="3" /></div>
         <div id="distanceWrap" class="hide"><label>西宮市からの距離（km）</label><input id="distance" type="number" min="0" step="1" value="0" /></div>
-        <div id="paymentWrap" class="hide"><label>ジモティー決済</label><select id="payment"><option value="online">オンライン決済</option><option value="cash">現金手渡し</option></select></div>
+        <div id="paymentWrap" class="hide"><label>ジモティー販売時の決済</label><select id="payment"><option value="online">オンライン決済</option><option value="cash">現金手渡し</option></select></div>
       </div>
       <div class="actions" style="margin-top:12px"><button class="btn primary full" id="judgeBtn">判定する</button></div>
     </div>
@@ -55,7 +57,7 @@
       <div class="actions"><button class="btn primary" id="saveBtn">候補に保存</button><a class="btn" id="openItem" target="_blank" rel="noopener">商品ページ</a></div>
       <div id="questionBox" class="question-box hide">
         <h2>出品者への確認質問</h2>
-        <p class="small">カテゴリ・真贋・状態リスクに合わせて自動生成します。内容を確認してから送信してください。</p>
+        <p class="small">カテゴリ・真贋・状態リスクに合わせて自動生成します。外部サイトへの送信は必ず人の確認後に行います。</p>
         <textarea id="questionText" readonly></textarea>
         <div class="actions" style="margin-top:10px"><button class="btn primary full" id="copyQuestionBtn">質問文をコピー</button></div>
       </div>
@@ -63,8 +65,8 @@
   </section>
 
   <section id="searchPanel" class="hide">
-    <div class="card"><h2>商品検索</h2><label>ブランド・商品名</label><input id="searchQ" placeholder="例: Cartier リング" /><div class="actions" style="margin-top:12px"><a class="btn" id="mercariLink" target="_blank">メルカリ</a><a class="btn" id="yahooLink" target="_blank">Yahoo!フリマ</a><a class="btn full" id="jmtyLink" target="_blank">ジモティー</a></div><p class="small">検索先を開いて候補を見つけたら「判定」に戻って価格・相場を入力してください。</p></div>
-    <div class="notice">ジモティーは規約上、自動クロールせず、検索リンクから確認する設計です。</div>
+    <div class="card"><h2>商品検索</h2><label>ブランド・商品名</label><input id="searchQ" placeholder="例: Cartier リング" /><div class="actions" style="margin-top:12px"><a class="btn" id="mercariLink" target="_blank">メルカリ</a><a class="btn" id="rakumaLink" target="_blank">楽天ラクマ</a><a class="btn" id="yahooLink" target="_blank">Yahoo!フリマ</a><a class="btn" id="yahooAuctionLink" target="_blank">Yahoo!オークション</a><a class="btn" id="jmtyLink" target="_blank">ジモティー</a><a class="btn" id="mobaokuLink" target="_blank">モバオク</a><a class="btn full" id="aucfanLink" target="_blank">オークファン（相場確認）</a></div><p class="small">候補を見つけたら「判定」で仕入元と販売先を分けて利益計算します。</p></div>
+    <div class="notice">自動ログイン・質問送信・購入は外部サイトの規約と認証に従います。質問/返信送信と購入確定は人の同意を必須とする運用です。</div>
   </section>
 
   <section id="historyPanel" class="hide">

@@ -16,13 +16,13 @@
     header{position:sticky;top:0;z-index:5;background:rgba(17,24,39,.96);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 18px 14px} header h1{font-size:20px;margin:0} header p{font-size:12px;margin:4px 0 0;color:#d1d5db}
     main{max-width:760px;margin:auto;padding:14px 14px calc(90px + env(safe-area-inset-bottom))}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.03)}
     h2{font-size:16px;margin:0 0 10px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:560px){.grid{grid-template-columns:1fr}}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}input,select{width:100%;font-size:16px;padding:12px;border:1px solid #d1d5db;border-radius:11px;background:#fff;color:#111827}
+    label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px}input,select,textarea{width:100%;font-size:16px;padding:12px;border:1px solid #d1d5db;border-radius:11px;background:#fff;color:#111827}textarea{min-height:210px;resize:vertical;line-height:1.55}
     .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}.btn{appearance:none;border:0;border-radius:12px;padding:13px 14px;font-size:15px;font-weight:700;background:#e5e7eb;color:#111827;text-align:center;text-decoration:none;display:block}.btn.primary{background:var(--accent);color:white}.btn.danger{background:#fee4e2;color:#912018}.btn.full{grid-column:1/-1}
     .result{display:none}.verdict{font-size:34px;font-weight:900;letter-spacing:.5px}.verdict.buy{color:var(--buy)}.verdict.watch{color:var(--watch)}.verdict.pass{color:var(--pass)}
     .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.metric{background:#f9fafb;border-radius:12px;padding:10px}.metric span{display:block;font-size:11px;color:var(--muted)}.metric b{font-size:18px}
     .scorebar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:10px}.scorebar>div{height:100%;background:var(--accent);width:0}
-    .small{font-size:12px;color:var(--muted);line-height:1.5}.history-item{padding:10px 0;border-top:1px solid var(--line)}.history-head{display:flex;justify-content:space-between;gap:8px}.pill{font-weight:800;font-size:12px;border-radius:999px;padding:4px 8px;background:#f3f4f6}
-    nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:6}nav button{flex:1;max-width:220px;border:0;background:#f3f4f6;border-radius:12px;padding:10px;font-weight:700}.hide{display:none!important}.notice{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e;border-radius:12px;padding:10px;font-size:12px}
+    .small{font-size:12px;color:var(--muted);line-height:1.5}.history-item{padding:10px 0;border-top:1px solid var(--line)}.history-head{display:flex;justify-content:space-between;gap:8px}.pill{font-weight:800;font-size:12px;border-radius:999px;padding:4px 8px;background:#f3f4f6}.mini-copy{margin-top:8px;border:0;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:700;background:#eef2ff;color:#1d4ed8}
+    nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:6}nav button{flex:1;max-width:220px;border:0;background:#f3f4f6;border-radius:12px;padding:10px;font-weight:700}.hide{display:none!important}.notice{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e;border-radius:12px;padding:10px;font-size:12px}.question-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
   </style>
 </head>
 <body>
@@ -53,6 +53,12 @@
       <div class="metrics"><div class="metric"><span>期待利益</span><b id="profit"></b></div><div class="metric"><span>利益率</span><b id="margin"></b></div><div class="metric"><span>スコア</span><b id="score"></b></div></div>
       <div class="scorebar"><div id="scoreFill"></div></div><p class="small" id="reason"></p>
       <div class="actions"><button class="btn primary" id="saveBtn">候補に保存</button><a class="btn" id="openItem" target="_blank" rel="noopener">商品ページ</a></div>
+      <div id="questionBox" class="question-box hide">
+        <h2>出品者への確認質問</h2>
+        <p class="small">カテゴリ・真贋・状態リスクに合わせて自動生成します。内容を確認してから送信してください。</p>
+        <textarea id="questionText" readonly></textarea>
+        <div class="actions" style="margin-top:10px"><button class="btn primary full" id="copyQuestionBtn">質問文をコピー</button></div>
+      </div>
     </div>
   </section>
 

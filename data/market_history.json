@@ -1,0 +1,41 @@
+[
+  {
+    "id": "2026-09-03-cartier-ballerine-pt950-18",
+    "observed_at": "2026-09-03T08:26:00+09:00",
+    "source": "mercari",
+    "category": "accessory",
+    "brand": "Cartier",
+    "model": "Ballerine",
+    "material": "PT950",
+    "size": "18号",
+    "title": "カルティエ リング PT950 18号 バレリーナ",
+    "asking_price_yen": 51200,
+    "condition_note": "使用感は少しあり。大きな傷や目立つ汚れはないとの商品説明。刻印と日付あり。白箱あり。",
+    "authenticity_note": "あんしん鑑定対象。画像だけでは真贋の最終確認は不可。",
+    "comps": [
+      {
+        "source": "mercari",
+        "title": "最安値!!【Cartier】Pt950 バレリーナ ウェディングリング 58",
+        "price_yen": 45000,
+        "status": "sold",
+        "size": "58（17号）",
+        "weight_g": 3.73,
+        "notes": "使用感あり、保証書なし、イニシャル入り",
+        "url": "https://jp.mercari.com/item/m83261837565"
+      },
+      {
+        "source": "recycleking",
+        "title": "カルティエ CARTIER バレリーナ カーブ ウエディング リング・指輪 18号 Pt950プラチナ ユニセックス 中古",
+        "price_yen": 47960,
+        "status": "sold_out",
+        "size": "18号",
+        "url": "https://recycleking.jp/products/brj09000000020702"
+      }
+    ],
+    "recommended_max_buy_yen": 42000,
+    "verdict": "PASS",
+    "decision_reason": "51,200円仕入れでは確認できた近似実売・売切価格に対して利益余地が小さいため。42,000円以下を再検討ラインとする。",
+    "confidence": "medium",
+    "evidence_note": "出品条件はユーザー提供スクリーンショット、比較相場は2026-09-03時点でWeb確認。"
+  }
+]

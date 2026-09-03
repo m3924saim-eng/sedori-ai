@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='9.0.0';
+const VERSION='9.1.0';
 const SITE_NAMES={mercari:'メルカリ',rakuma:'楽天ラクマ',yahoo_fleamarket:'Yahoo!フリマ',yahoo_auction:'Yahoo!オークション',jmty:'ジモティー'};
 const SELL_SITES=['mercari','rakuma','yahoo_fleamarket','yahoo_auction'];
 const PRECIOUS=new Set(['k24','k22','k18','k14','k10','pt950','pt900','platinum','sv925','silver']);
@@ -108,18 +108,27 @@ function buildMarket(item,all,q,s){
   const strict=robust(sc.filter(z=>z.sim.grade==='A'));
   const broad=robust(sc.filter(z=>['A','B','C'].includes(z.sim.grade)));
   const a=broad.rows.filter(z=>z.sim.grade==='A').length,b=broad.rows.filter(z=>z.sim.grade==='B').length,c=broad.rows.filter(z=>z.sim.grade==='C').length;
-  const strictIdentity=!!(wanted.brand||wanted.models.length||strongPrecious(wanted)||target.brand||target.models.length||strongPrecious(target));
-  let rows,ready,mode;
+  const strictIdentity=!!(wanted.brand||wanted.models.length||wanted.specs.length||strongPrecious(wanted)||target.brand||target.models.length||target.specs.length>=2||strongPrecious(target));
+  const broadSourceCount=new Set(broad.rows.map(z=>z.x.source).filter(Boolean)).size;
+  let rows,ready,mode,referenceFallback=false;
   if(strictIdentity){rows=strict.rows;ready=rows.length>=2;mode=ready?'strict':'strict-insufficient'}
-  else{rows=broad.rows;ready=rows.length>=4&&(a+b)>=2;mode=ready?'category':'category-insufficient'}
+  else{
+    rows=broad.rows;
+    const normalReady=rows.length>=4&&(a+b)>=2;
+    const fallbackReady=rows.length>=8&&broadSourceCount>=2&&broad.spread<=.55;
+    ready=normalReady||fallbackReady;
+    referenceFallback=!normalReady&&fallbackReady;
+    mode=normalReady?'category':fallbackReady?'category-reference':'category-insufficient';
+  }
   const weights={A:1,B:.70,C:.35};
   const weighted=rows.map(z=>({value:+z.x.price,weight:weights[z.sim.grade]||.2}));
-  const factor=strictIdentity?{low:.90,std:.94,high:.97}:{low:.80,std:.88,high:.94};
+  const factor=strictIdentity?{low:.90,std:.94,high:.97}:referenceFallback?{low:.72,std:.80,high:.88}:{low:.80,std:.88,high:.94};
   const low=ready?Math.floor(wq(weighted,.20)*factor.low/100)*100:0;
   const baseStd=ready?Math.floor(wq(weighted,.35)*factor.std/100)*100:0;
   const high=ready?Math.floor(wq(weighted,.58)*factor.high/100)*100:0;
   const sourceCount=new Set(rows.map(z=>z.x.source).filter(Boolean)).size,spread=(rows===strict.rows?strict.spread:broad.spread)||0;
   let conf=Math.min(36,rows.length*6)+Math.min(24,(a+b)*5)+Math.min(12,sourceCount*4)+(strictIdentity?Math.min(18,a*9):0);
+  if(referenceFallback)conf=Math.min(conf,54);
   if(spread>.65)conf-=22; else if(spread>.48)conf-=12; else if(spread>.32)conf-=5;
   if(!ready)conf=Math.min(conf,44); if(!strictIdentity)conf=Math.min(conf,72); conf=clamp(Math.round(conf),0,100);
   const ship=shipping(target.cat.id,s),candidates=[];
@@ -127,7 +136,7 @@ function buildMarket(item,all,q,s){
     for(const site of SELL_SITES){
       const sr=rows.filter(z=>z.x.source===site),siteWeighted=sr.map(z=>({value:+z.x.price,weight:weights[z.sim.grade]||.2}));
       const siteBase=sr.length>=2?wq(siteWeighted,.35):baseStd;
-      const est=Math.floor(siteBase*(strictIdentity?.94:.90)/100)*100,fee=Number(s.fees[site]??10);
+      const est=Math.floor(siteBase*(strictIdentity?.94:referenceFallback?.82:.90)/100)*100,fee=Number(s.fees[site]??10);
       const mm=money({buy:item.price,sell:est,fee,ship},s);
       candidates.push({site,price:est,fee,ship,net:mm.net,profit:mm.profit,sourceComps:sr.length});
     }
@@ -137,8 +146,8 @@ function buildMarket(item,all,q,s){
   const sell=candidates[0]||{site:fallback,price:baseStd,fee:Number(s.fees[fallback]??10),ship,net:0,profit:0,sourceComps:0};
   return{rows:broad.rows,aCount:a,bCount:b,cCount:c,compCount:broad.rows.length,priceCompCount:rows.length,priceSourceCount:sourceCount,removed:broad.removed,spread,
     confidenceScore:conf,confidence:conf>=80?'高':conf>=65?'中':conf>=45?'低':'不足',
-    conservative:low,standard:sell.price||baseStd,aggressive:high,sell,id:target,mode,strictIdentity,priceReady:ready,
-    priceReason:strictIdentity?'厳密一致2件未満':'カテゴリ相場4件または高一致2件未満'};
+    conservative:low,standard:sell.price||baseStd,aggressive:high,sell,id:target,mode,strictIdentity,priceReady:ready,referenceFallback,
+    priceReason:strictIdentity?'厳密一致2件未満':'カテゴリ相場4件＋高一致2件、または参考一致8件＋2サイト以上の根拠不足'};
 }
 function opportunity(item,m,s){
   const fullText=(item.title||'')+' '+(item.rawText||''),risk=idOf(fullText).risk,imitation=isImitationText(fullText);
@@ -154,11 +163,11 @@ function opportunity(item,m,s){
     else if(std.profit>=s.watchProfit&&std.roi>=s.watchRoi){verdict='WATCH';reason.push('利益余地あり。仕入前確認が必要')}
     else if(std.profit>0){verdict='HOLD';reason.push('利益はあるが基準未達')}
   }else{
-    if(std.profit>=s.watchProfit&&std.roi>=s.watchRoi&&m.confidenceScore>=50){verdict='WATCH';reason.push('カテゴリ相場で利益余地あり。一般商品なので要確認')}
-    else if(std.profit>0){verdict='HOLD';reason.push('利益余地はあるが相場根拠が弱い')}
+    if(std.profit>=s.watchProfit&&std.roi>=s.watchRoi&&m.confidenceScore>=50){verdict='WATCH';reason.push(m.referenceFallback?'参考一致中心のカテゴリ相場で利益余地あり。誤同一リスクがあるため要確認':'カテゴリ相場で利益余地あり。一般商品なので要確認')}
+    else if(std.profit>0){verdict='HOLD';reason.push(m.referenceFallback?'参考相場では利益余地あり。ただし根拠が弱い':'利益余地はあるが相場根拠が弱い')}
   }
   if(risk.level===1&&verdict==='BUY'){verdict='WATCH';reason.push('注意語あり')}
-  const score=Math.round(clamp(clamp(std.profit/Math.max(1,s.minProfit)*32,0,36)+clamp(std.roi/Math.max(1,s.minRoi)*24,0,28)+m.confidenceScore*.36-risk.level*10,0,100));
+  const score=Math.round(clamp(clamp(std.profit/Math.max(1,s.minProfit)*32,0,36)+clamp(std.roi/Math.max(1,s.minRoi)*24,0,28)+m.confidenceScore*.36-risk.level*10-(m.referenceFallback?8:0),0,100));
   return{...std,lowProfit:low.profit,lowRoi:low.roi,verdict,score,reason:reason.join(' ／ ')||'基準未達'};
 }
 function analyze(items,q,s){
@@ -179,7 +188,7 @@ function render(items,siteCounts={},errors={}){
   sum.classList.remove('hide'); box.innerHTML='';
   for(const z of rows){
     const x=z.item,m=z.market,k=z.calc,d=document.createElement('div'); d.className='candidate';
-    d.innerHTML=`<img src="${esc(x.image||'icons/icon-192.png')}" alt=""><div><div class="source-line">検索元：${esc(siteName(x.source))}｜${esc(m.id.cat.label)}｜信頼度 ${m.confidenceScore}/100（${m.confidence}）</div><h3 class="candidate-title">${esc(x.title)}</h3><div class="moneyline">仕入 ${yen(x.price)} → ${m.priceReady?esc(siteName(m.sell.site)):'—'}｜${m.strictIdentity?'標準売価':'カテゴリ参考売価'} ${m.standard?yen(m.standard):'算定不可'}</div><div class="profitline"><b>想定利益 ${m.standard?yen(k.profit):'—'}</b>｜ROI ${m.standard?pct(k.roi):'—'}｜最大仕入 ${m.standard?yen(k.maxBuy):'—'}</div><div class="candidate-data">相場：安全側 ${m.conservative?yen(m.conservative):'—'} ／ 標準 ${m.standard?yen(m.standard):'—'} ／ 上限 ${m.aggressive?yen(m.aggressive):'—'}<br>比較：厳密 ${m.aCount}・高一致 ${m.bCount}・参考 ${m.cCount}｜価格根拠 ${m.priceCompCount}件｜${m.priceSourceCount}サイト｜ばらつき ${Math.round((m.spread||0)*100)}%<br>判定：${esc(k.reason)}<br><span style="font-size:11px">※販売中表示価格からの推定。手数料・推定送料を控除。一般商品のカテゴリ相場だけでは「仕入候補」にしません。</span></div><div class="verdict ${k.verdict.toLowerCase()}">${verdictLabel[k.verdict]}<span class="badge">評価 ${k.score}点</span></div><div class="candidate-actions"><a class="btn" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(siteName(x.source))}で見る</a></div></div>`;
+    d.innerHTML=`<img src="${esc(x.image||'icons/icon-192.png')}" alt=""><div><div class="source-line">検索元：${esc(siteName(x.source))}｜${esc(m.id.cat.label)}｜信頼度 ${m.confidenceScore}/100（${m.confidence}）</div><h3 class="candidate-title">${esc(x.title)}</h3><div class="moneyline">仕入 ${yen(x.price)} → ${m.priceReady?esc(siteName(m.sell.site)):'—'}｜${m.strictIdentity?'標準売価':m.referenceFallback?'参考安全売価':'カテゴリ参考売価'} ${m.standard?yen(m.standard):'算定不可'}</div><div class="profitline"><b>想定利益 ${m.standard?yen(k.profit):'—'}</b>｜ROI ${m.standard?pct(k.roi):'—'}｜最大仕入 ${m.standard?yen(k.maxBuy):'—'}</div><div class="candidate-data">相場：安全側 ${m.conservative?yen(m.conservative):'—'} ／ 標準 ${m.standard?yen(m.standard):'—'} ／ 上限 ${m.aggressive?yen(m.aggressive):'—'}<br>比較：厳密 ${m.aCount}・高一致 ${m.bCount}・参考 ${m.cCount}｜価格根拠 ${m.priceCompCount}件｜${m.priceSourceCount}サイト｜ばらつき ${Math.round((m.spread||0)*100)}%<br>判定：${esc(k.reason)}<br><span style="font-size:11px">※販売中表示価格からの推定。手数料・推定送料を控除。一般商品のカテゴリ相場だけでは「仕入候補」にしません。参考一致中心で売価を出した場合も「要確認」以下に制限します。</span></div><div class="verdict ${k.verdict.toLowerCase()}">${verdictLabel[k.verdict]}<span class="badge">評価 ${k.score}点</span></div><div class="candidate-actions"><a class="btn" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(siteName(x.source))}で見る</a></div></div>`;
     box.appendChild(d);
   }
   box.classList.toggle('hide',!rows.length);
@@ -189,18 +198,18 @@ function render(items,siteCounts={},errors={}){
   const st=$('searchStatus'); if(st)st.textContent=`${r.clean.length}件受信。${counts||'サイト内訳なし'}。${discrepancy} 検索条件不一致 ${r.rej.length}件除外。判定対象 ${all.length}件、表示 ${rows.length}件。仕入候補 ${c.BUY} / 要確認 ${c.WATCH} / 保留 ${c.HOLD} / 見送り ${c.PASS}。${err?`取得注意 ${err}`:''}`;
 }
 function brandUI(){
-  document.title='せどりAI v9.0.0';
-  const p=document.querySelector('header p'); if(p)p.textContent='v9.0.0 実用判定エンジン｜同一性・相場耐性・純利益を強化';
-  const st=$('searchStatus'); if(st&&/v8\.3\.0|起動中/.test(st.textContent||''))st.textContent='v9.0.0判定エンジンを起動しました。';
+  document.title='せどりAI v9.1.0';
+  const p=document.querySelector('header p'); if(p)p.textContent='v9.1.0 実用判定エンジン｜参考相場フォールバック・同一性・純利益を強化';
+  const st=$('searchStatus'); if(st&&/v8\.3\.0|v9\.0\.0|起動中/.test(st.textContent||''))st.textContent='v9.1.0判定エンジンを起動しました。';
 }
 window.addEventListener('message',e=>{
   if(e.source!==window||e.data?.type!=='SEDORI_SEARCH_RESULTS')return;
   if(!api())return;
   e.stopImmediatePropagation();
   try{render(e.data.items||[],e.data.siteCounts||{},e.data.errors||{})}
-  catch(err){console.error('v9 logic error',err);const st=$('searchStatus');if(st)st.textContent='判定処理でエラーが発生しました。再検索してください。'}
+  catch(err){console.error('v9.1 logic error',err);const st=$('searchStatus');if(st)st.textContent='判定処理でエラーが発生しました。再検索してください。'}
 },true);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',brandUI,{once:true});else brandUI();
-window.__SEDORI_V83_PATCH__={version:VERSION,engine:'v9'};
+window.__SEDORI_V83_PATCH__={version:VERSION,engine:'v9.1'};
 window.__SEDORI_V9__={version:VERSION,analyze,render,money};
 })();

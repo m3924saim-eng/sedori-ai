@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         せどりAI v4 実用版 5サイト検索＋販売下書き
 // @namespace    https://m3924saim-eng.github.io/
-// @version      4.0.0
-// @description  5サイト横断検索を安定化し、検索失敗をサイト別に記録。仕入候補・販売下書き入力も補助します。
+// @version      4.1.0
+// @description  5サイト横断検索を安定化し、ログイン状態をSPA遷移後も自動更新。仕入候補・販売下書き入力も補助します。
 // @match        https://m3924saim-eng.github.io/*
 // @match        https://jp.mercari.com/*
 // @match        https://fril.jp/*
@@ -34,9 +34,35 @@ const SEL={mercari:'a[href*="/item/"]',rakuma:'a[href*="/products/"],a[href*="/i
 function rootFor(a){return a.closest('article,li,[data-testid*="item"],[data-testid*="product"],[class*="item"],[class*="Item"],[class*="card"],[class*="Card"],section')||a.parentElement||a}
 function conditionText(t){if(/新品|未使用|新品同様/i.test(t))return'new';if(/ジャンク|要修理|全体的に状態が悪い|傷や汚れあり/i.test(t))return'used';return'good'}
 function collect(site,f){const map=new Map(),max=Math.max(10,Math.min(80,+f.maxPerSite||50));document.querySelectorAll(SEL[site]||'a').forEach(a=>{const r=rootFor(a),txt=(r.innerText||a.innerText||'').replace(/\s+/g,' ').trim();if(!txt||txt.length>2500)return;const p=price(txt),img=r.querySelector('img'),title=(img?.alt||a.getAttribute('aria-label')||a.getAttribute('title')||a.innerText||txt.replace(/[¥￥]\s*[\d,]+.*$/,'')).replace(/\s+/g,' ').trim().slice(0,180),url=(a.href||'').split('?')[0];if(!p||!title||!url)return;if(f.min&&p<f.min||f.max&&p>f.max)return;if(f.onSale&&/売り切れ|SOLD|取引終了|受付終了|終了しました|落札済/i.test(txt))return;if(f.excludeAds&&(/広告|スポンサー|おすすめショップ|プロモーション|\bPR\b/i.test(txt)||r.closest('[data-testid*="ad"],[class*="advert"],[class*="sponsor"]')))return;const cond=conditionText(txt);if(f.condition==='new'&&cond!=='new')return;if(f.condition==='good'&&cond==='used')return;if(!map.has(url))map.set(url,{source:site,title,price:p,url,image:img?.currentSrc||img?.src||'',condition:cond,rawText:txt.slice(0,500)})});return[...map.values()].slice(0,max)}
-function login(){const t=(document.body?.innerText||'').slice(0,18000);if(/ログアウト|マイページ|出品する|出品\/売る|ウォッチリスト|取引中|お知らせ/.test(t)&&!/ログインしてください/.test(t))return'in';if(/ログイン|会員登録|新規登録/.test(t))return'out';return'unknown'}
+function login(){
+ const t=(document.body?.innerText||'').slice(0,120000),p=(location.pathname||'').toLowerCase();
+ if(/\/(login|signin|sign_in|auth)(\/|$)/.test(p)||/ログインしてください|ログインが必要/.test(t))return'out';
+ const inText=/ログアウト|マイページ|出品する|出品\/売る|ウォッチリスト|取引中|お知らせ|購入履歴|出品した商品|アカウント/.test(t);
+ const inDom=!!document.querySelector('a[href*="/mypage"],a[href*="/sell"],a[href*="/notifications"],a[href*="/users/sign_out"],a[href*="logout"]');
+ if(inText||inDom)return'in';
+ const outDom=!!document.querySelector('a[href*="login"],a[href*="signin"],a[href*="sign_in"],a[href*="signup"],a[href*="register"]');
+ if(outDom||/ログイン|会員登録|新規登録/.test(t))return'out';
+ return'unknown'
+}
+async function saveLoginState(site,state){
+ const ls=await get(LOGIN,{}),prev=ls[site];
+ if(state==='unknown'&&(prev==='in'||prev==='out'))return prev;
+ ls[site]=state;
+ if(site.startsWith('yahoo_')){ls.yahoo_fleamarket=state;ls.yahoo_auction=state}
+ await set(LOGIN,ls);
+ return state
+}
+async function refreshLoginState(site){return saveLoginState(site,login())}
+function watchLoginState(site){
+ let timer=0,lastHref=location.href;
+ const run=()=>{clearTimeout(timer);timer=setTimeout(()=>refreshLoginState(site),250)};
+ addEventListener('pageshow',run);addEventListener('focus',run);addEventListener('popstate',run);addEventListener('hashchange',run);
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)run()});
+ new MutationObserver(()=>{if(location.href!==lastHref){lastHref=location.href;run()}else run()}).observe(document.documentElement,{childList:true,subtree:true});
+ let n=0;const iv=setInterval(()=>{refreshLoginState(site);if(++n>=30)clearInterval(iv)},2000);
+}
 async function stableCollect(site,f){let best=[],last=-1,stable=0;for(let i=0;i<14;i++){await sleep(i===0?1200:700);const now=collect(site,f);if(now.length>best.length)best=now;if(now.length===last&&now.length>0)stable++;else stable=0;last=now.length;if(stable>=2||best.length>=Math.min(45,+f.maxPerSite||50))break}return best}
-async function finishSite(site,j){let items=[],err='';try{const ls=await get(LOGIN,{}),state=login();ls[site]=state;if(site.startsWith('yahoo_')){ls.yahoo_fleamarket=state;ls.yahoo_auction=state}await set(LOGIN,ls);items=await stableCollect(site,j.filters);if(!items.length){if(state==='out')err='要ログイン';else err='商品取得0件'}}catch(e){err='取得エラー';console.error(e)}j.items.push(...items);j.siteCounts[site]=items.length;j.errors[site]=err;j.index++;if(j.index<j.queue.length){await set(JOB,j);location.href=j.queue[j.index][1]}else{const dedup=[...new Map(j.items.map(x=>[x.url,x])).values()];await set(RESULT,{items:dedup,siteCounts:j.siteCounts,errors:j.errors,started:j.started,finished:Date.now()});await del(JOB);location.href=j.returnUrl+'#search'}}
+async function finishSite(site,j){let items=[],err='';try{const state=await refreshLoginState(site);items=await stableCollect(site,j.filters);if(!items.length){if(state==='out')err='要ログイン';else err='商品取得0件'}}catch(e){err='取得エラー';console.error(e)}j.items.push(...items);j.siteCounts[site]=items.length;j.errors[site]=err;j.index++;if(j.index<j.queue.length){await set(JOB,j);location.href=j.queue[j.index][1]}else{const dedup=[...new Map(j.items.map(x=>[x.url,x])).values()];await set(RESULT,{items:dedup,siteCounts:j.siteCounts,errors:j.errors,started:j.started,finished:Date.now()});await del(JOB);location.href=j.returnUrl+'#search'}}
 
 function history(){try{return JSON.parse(localStorage.getItem('sedori_history')||'[]')}catch{return[]}}function save(h){localStorage.setItem('sedori_history',JSON.stringify(h))}
 function type(t){for(const [n,r] of [['リング',/リング|指輪/],['ネックレス',/ネックレス|ペンダント/],['財布',/財布|ウォレット/],['バッグ',/バッグ|トート|ショルダー/],['時計',/時計|ウォッチ/],['工具',/マキタ|ハイコーキ|工具|インパクト|ドリル/],['家電・デジタル',/iPhone|iPad|MacBook|カメラ|レンズ|ゲーム/],['アパレル',/Tシャツ|シャツ|ジャケット|コート|パンツ|デニム/]])if(r.test(t||''))return n;return'商品'}
@@ -48,7 +74,7 @@ function find(a){for(const s of a){const e=document.querySelector(s);if(e&&e.off
 function fields(){return{title:['input[name*="title"]','input[placeholder*="タイトル"]','input[placeholder*="商品名"]','input[placeholder*="商品の名前"]'],desc:['textarea[name*="description"]','textarea[placeholder*="説明"]','textarea[placeholder*="本文"]','textarea'],price:['input[name*="price"]','input[placeholder*="価格"]','input[placeholder*="販売価格"]','input[inputmode="numeric"]']}}
 async function apply(site){const b=await get(DRAFT,null);if(!b||b.targetSite!==site||!b.draft)return false;const f=fields(),ok=[input(find(f.title),b.draft.title),input(find(f.desc),b.draft.description),input(find(f.price),String(b.draft.price))].some(Boolean);if(ok){const n=document.createElement('div');n.textContent='せどりAIの下書きを入力しました。写真・状態・カテゴリを確認してから保存/出品してください。';n.style.cssText='position:fixed;z-index:99999;left:10px;right:10px;bottom:10px;padding:11px;background:#111827;color:#fff;border-radius:10px;font-size:13px';document.body.append(n);setTimeout(()=>n.remove(),6500);await set(DRAFT,{...b,appliedAt:Date.now()});return true}return false}
 
-if(location.hostname===APP){window.__SEDORI_USERSCRIPT__=true;const r=await get(RESULT,null);if(r?.items){await del(RESULT);window.postMessage({type:'SEDORI_SEARCH_RESULTS',items:r.items,siteCounts:r.siteCounts||{},errors:r.errors||{}},location.origin)}window.addEventListener('message',async e=>{if(e.source!==window)return;if(e.data?.type==='SEDORI_START_SEARCH'){const f=e.data.filters||{},q=queue(f);await set(JOB,{version:4,filters:f,queue:q,index:0,items:[],siteCounts:{},errors:{},returnUrl:location.href.split('#')[0],started:Date.now()});location.href=q[0][1]}if(e.data?.type==='SEDORI_CHECK_LOGINS')window.postMessage({type:'SEDORI_LOGIN_STATUS',status:await get(LOGIN,{})},location.origin)});new MutationObserver(()=>decorate()).observe(document.body,{childList:true,subtree:true});setTimeout(decorate,600);return}
-const site=H[location.hostname];if(!site)return;const ls=await get(LOGIN,{});ls[site]=login();if(site.startsWith('yahoo_')){ls.yahoo_fleamarket=ls[site];ls.yahoo_auction=ls[site]}await set(LOGIN,ls);const j=await get(JOB,null);if(j&&Date.now()-j.started<8*60*1000){const ex=j.queue?.[j.index];if(ex&&ex[0]===site){await finishSite(site,j);return}}else if(j){await del(JOB)}
+if(location.hostname===APP){window.__SEDORI_USERSCRIPT__=true;window.__SEDORI_USERSCRIPT_VERSION__='4.1.0';const r=await get(RESULT,null);if(r?.items){await del(RESULT);window.postMessage({type:'SEDORI_SEARCH_RESULTS',items:r.items,siteCounts:r.siteCounts||{},errors:r.errors||{}},location.origin)}window.addEventListener('message',async e=>{if(e.source!==window)return;if(e.data?.type==='SEDORI_START_SEARCH'){const f=e.data.filters||{},q=queue(f);await set(JOB,{version:4,filters:f,queue:q,index:0,items:[],siteCounts:{},errors:{},returnUrl:location.href.split('#')[0],started:Date.now()});location.href=q[0][1]}if(e.data?.type==='SEDORI_CHECK_LOGINS')window.postMessage({type:'SEDORI_LOGIN_STATUS',status:await get(LOGIN,{})},location.origin)});new MutationObserver(()=>decorate()).observe(document.body,{childList:true,subtree:true});setTimeout(decorate,600);return}
+const site=H[location.hostname];if(!site)return;await refreshLoginState(site);watchLoginState(site);const j=await get(JOB,null);if(j&&Date.now()-j.started<8*60*1000){const ex=j.queue?.[j.index];if(ex&&ex[0]===site){await finishSite(site,j);return}}else if(j){await del(JOB)}
 let tries=0,timer=setInterval(async()=>{tries++;if(await apply(site)||tries>24)clearInterval(timer)},1000);
 })();

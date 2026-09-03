@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         せどりAI 5サイト同条件検索
+// @name         せどりAI 5サイト検索＋販売下書き
 // @namespace    https://m3924saim-eng.github.io/
-// @version      2.0.0
-// @description  iPad Safariで5サイトを同条件検索し、商品をせどりAIへ集約します。
+// @version      3.0.0
+// @description  5サイト横断検索、仕入管理、販売文生成、出品フォーム下書き入力を補助します。
 // @match        https://m3924saim-eng.github.io/*
 // @match        https://jp.mercari.com/*
 // @match        https://fril.jp/*
@@ -14,58 +14,34 @@
 // @grant        GM.deleteValue
 // @run-at       document-idle
 // ==/UserScript==
-(async function(){
-  'use strict';
-  const APP_HOST='m3924saim-eng.github.io',JOB='sedori_job_v2',RESULT='sedori_result_v2',LOGIN='sedori_login_v2';
-  const sourceByHost={'jp.mercari.com':'mercari','fril.jp':'rakuma','paypayfleamarket.yahoo.co.jp':'yahoo_fleamarket','auctions.yahoo.co.jp':'yahoo_auction','jmty.jp':'jmty'};
-  const enc=encodeURIComponent;
-  const get=async(k,d)=>{try{return await GM.getValue(k,d)}catch{return d}};
-  const set=async(k,v)=>{try{await GM.setValue(k,v)}catch(e){console.error('せどりAI保存失敗',e)}};
-  const del=async k=>{try{await GM.deleteValue(k)}catch{}};
-  function buildQueue(f){
-    const q=enc(f.query),min=f.min||0,max=f.max||0;
-    return [
-      ['mercari',`https://jp.mercari.com/search?keyword=${q}&price_min=${min}&price_max=${max}&status=${f.onSale?'on_sale':'all'}&sort=${f.sort==='newest'?'created_time':'price'}&order=${f.sort==='price_desc'?'desc':'asc'}`],
-      ['rakuma',`https://fril.jp/s?query=${q}&min=${min}&max=${max}&transaction=selling`],
-      ['yahoo_fleamarket',`https://paypayfleamarket.yahoo.co.jp/search/${q}?minPrice=${min}&maxPrice=${max}`],
-      ['yahoo_auction',`https://auctions.yahoo.co.jp/search/search?p=${q}&min=${min}&max=${max}`],
-      ['jmty',`https://jmty.jp/hyogo/sale?keyword=${q}`]
-    ];
-  }
-  const priceOf=text=>{const nums=[...String(text).replace(/[,，]/g,'').matchAll(/[¥￥]\s*(\d{1,9})|(\d{1,9})\s*円/g)].map(m=>Number(m[1]||m[2])).filter(n=>n>0);return nums[0]||0};
-  const linkSelectors={mercari:'a[href*="/item/"]',rakuma:'a[href*="/products/"],a[href*="/item/"]',yahoo_fleamarket:'a[href*="/item/"]',yahoo_auction:'a[href*="/jp/auction/"]',jmty:'a[href*="/sale-"]'};
-  function isAd(root,text){return /広告|PR|スポンサー|おすすめショップ/.test(text)||!!root.closest('[data-testid*="ad"],[class*="advert"],[class*="sponsor"]')}
-  function sold(text){return /売り切れ|SOLD|取引終了|受付終了|終了しました/i.test(text)}
-  function collect(source,filters){
-    const found=[];
-    document.querySelectorAll(linkSelectors[source]||'a').forEach(a=>{
-      const root=a.closest('article,li,[data-testid*="item"],[class*="item"],[class*="card"],section')||a;
-      const text=(root.innerText||a.innerText||'').replace(/\s+/g,' ').trim(),price=priceOf(text),img=root.querySelector('img');
-      const title=(img?.alt||a.getAttribute('aria-label')||a.getAttribute('title')||text.replace(/[¥￥]\s*[\d,]+.*$/,'')).trim().slice(0,180);
-      if(!price||!title||!a.href)return;
-      if(filters.min&&price<filters.min)return;if(filters.max&&price>filters.max)return;
-      if(filters.onSale&&sold(text))return;if(filters.excludeAds&&isAd(root,text))return;
-      if(filters.condition==='new'&&!/新品|未使用|新品同様/.test(text))return;
-      if(filters.condition==='good'&&/全体的に状態が悪い|傷や汚れあり|ジャンク|要修理/.test(text))return;
-      found.push({source,title,price,url:a.href.split('?')[0],image:img?.currentSrc||img?.src||'',sold:sold(text)});
-    });
-    return [...new Map(found.map(x=>[x.url,x])).values()].slice(0,30);
-  }
-  function loginState(){const text=(document.body?.innerText||'').slice(0,12000);return /ログアウト|マイページ|出品する|出品\/売る|ウォッチリスト|取引中/.test(text)?'in':/ログイン|会員登録/.test(text)?'out':'unknown'}
-  if(location.hostname===APP_HOST){
-    window.__SEDORI_USERSCRIPT__=true;
-    const result=await get(RESULT,null);
-    if(result?.items){await del(RESULT);window.postMessage({type:'SEDORI_SEARCH_RESULTS',items:result.items,siteCounts:result.siteCounts||{}},location.origin)}
-    window.addEventListener('message',async e=>{
-      if(e.source!==window)return;
-      if(e.data?.type==='SEDORI_START_SEARCH'){const filters=e.data.filters||{},queue=buildQueue(filters);await set(JOB,{filters,queue,index:0,items:[],siteCounts:{},returnUrl:location.href.split('#')[0],started:Date.now()});location.href=queue[0][1]}
-      if(e.data?.type==='SEDORI_CHECK_LOGINS')window.postMessage({type:'SEDORI_LOGIN_STATUS',status:await get(LOGIN,{})},location.origin);
-    });
-    return;
-  }
-  const source=sourceByHost[location.hostname];if(!source)return;
-  const login=await get(LOGIN,{});login[source]=loginState();if(source.startsWith('yahoo_')){login.yahoo_fleamarket=login[source];login.yahoo_auction=login[source]}await set(LOGIN,login);
-  const job=await get(JOB,null);if(!job||Date.now()-job.started>180000)return;
-  const expected=job.queue[job.index];if(!expected||expected[0]!==source)return;
-  setTimeout(async()=>{const items=collect(source,job.filters);job.items.push(...items);job.siteCounts[source]=items.length;job.index++;if(job.index<job.queue.length){await set(JOB,job);location.href=job.queue[job.index][1]}else{await set(RESULT,{items:[...new Map(job.items.map(x=>[x.url,x])).values()],siteCounts:job.siteCounts});await del(JOB);location.href=job.returnUrl+'#search'}},4500);
+(async()=>{'use strict';
+const APP='m3924saim-eng.github.io',JOB='sedori_job_v3',RESULT='sedori_result_v3',LOGIN='sedori_login_v3',DRAFT='sedori_draft_v3',enc=encodeURIComponent;
+const H={'jp.mercari.com':'mercari','fril.jp':'rakuma','paypayfleamarket.yahoo.co.jp':'yahoo_fleamarket','auctions.yahoo.co.jp':'yahoo_auction','jmty.jp':'jmty'};
+const N={mercari:'メルカリ',rakuma:'楽天ラクマ',yahoo_fleamarket:'Yahoo!フリマ',yahoo_auction:'Yahoo!オークション',jmty:'ジモティー'};
+const SELL={mercari:'https://jp.mercari.com/sell',rakuma:'https://fril.jp/',yahoo_fleamarket:'https://paypayfleamarket.yahoo.co.jp/sell',yahoo_auction:'https://auctions.yahoo.co.jp/',jmty:'https://jmty.jp/'};
+const BG={clean_white:'白背景・自然光風',wood_table:'木目テーブル背景',concrete_gray:'ライトグレー背景',soft_beige:'ベージュ背景',dark_luxury:'ダーク背景・高級感'};
+const get=async(k,d)=>{try{return await GM.getValue(k,d)}catch{return d}},set=async(k,v)=>{try{await GM.setValue(k,v)}catch(e){console.error(e)}},del=async k=>{try{await GM.deleteValue(k)}catch{}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen=n=>'¥'+Math.round(Number(n)||0).toLocaleString('ja-JP');
+function queue(f){let q=enc(f.query),a=f.min||0,b=f.max||0;return[['mercari',`https://jp.mercari.com/search?keyword=${q}&price_min=${a}&price_max=${b}&status=${f.onSale?'on_sale':'all'}&sort=${f.sort==='newest'?'created_time':'price'}&order=${f.sort==='price_desc'?'desc':'asc'}`],['rakuma',`https://fril.jp/s?query=${q}&min=${a}&max=${b}&transaction=selling`],['yahoo_fleamarket',`https://paypayfleamarket.yahoo.co.jp/search/${q}?minPrice=${a}&maxPrice=${b}`],['yahoo_auction',`https://auctions.yahoo.co.jp/search/search?p=${q}&min=${a}&max=${b}`],['jmty',`https://jmty.jp/hyogo/sale?keyword=${q}`]]}
+const price=t=>{let x=[...String(t).replace(/[,，]/g,'').matchAll(/[¥￥]\s*(\d{1,9})|(\d{1,9})\s*円/g)].map(m=>+(m[1]||m[2])).filter(Boolean);return x[0]||0};
+const SEL={mercari:'a[href*="/item/"]',rakuma:'a[href*="/products/"],a[href*="/item/"]',yahoo_fleamarket:'a[href*="/item/"]',yahoo_auction:'a[href*="/jp/auction/"]',jmty:'a[href*="/sale-"]'};
+function collect(s,f){let out=[];document.querySelectorAll(SEL[s]||'a').forEach(a=>{let r=a.closest('article,li,[data-testid*="item"],[class*="item"],[class*="card"],section')||a,t=(r.innerText||a.innerText||'').replace(/\s+/g,' ').trim(),p=price(t),img=r.querySelector('img'),title=(img?.alt||a.getAttribute('aria-label')||a.title||t.replace(/[¥￥]\s*[\d,]+.*$/,'')).trim().slice(0,180);if(!p||!title||!a.href)return;if(f.min&&p<f.min||f.max&&p>f.max)return;if(f.onSale&&/売り切れ|SOLD|取引終了|受付終了|終了しました/i.test(t))return;if(f.excludeAds&&(/広告|PR|スポンサー|おすすめショップ/.test(t)||r.closest('[data-testid*="ad"],[class*="advert"],[class*="sponsor"]')))return;if(f.condition==='new'&&!/新品|未使用|新品同様/.test(t))return;if(f.condition==='good'&&/全体的に状態が悪い|傷や汚れあり|ジャンク|要修理/.test(t))return;out.push({source:s,title,price:p,url:a.href.split('?')[0],image:img?.currentSrc||img?.src||''})});return[...new Map(out.map(x=>[x.url,x])).values()].slice(0,30)}
+function login(){let t=(document.body?.innerText||'').slice(0,12000);return/ログアウト|マイページ|出品する|出品\/売る|ウォッチリスト|取引中/.test(t)?'in':/ログイン|会員登録/.test(t)?'out':'unknown'}
+function history(){try{return JSON.parse(localStorage.getItem('sedori_history')||'[]')}catch{return[]}}function save(h){localStorage.setItem('sedori_history',JSON.stringify(h))}
+function type(t){for(let [n,r] of [['リング',/リング/],['ネックレス',/ネックレス/],['財布',/財布|ウォレット/],['Tシャツ',/Tシャツ|カットソー/],['シャツ',/シャツ/],['ジャケット',/ジャケット/],['バッグ',/バッグ|トート|ショルダー/]])if(r.test(t||''))return n;return'商品'}
+function draft(x){let title=String(x.title||type(x.title)).replace(/^【[^】]+】\s*/,'').slice(0,60),st=x.cond==='low'?'目立つ傷や汚れなし':x.cond==='high'?'傷や汚れあり':'やや使用感あり',bg=x.background_preset||'clean_white',desc=`${type(x.title)}です。\n即購入OKです。\n中古品のため、状態は写真・説明をご確認のうえご検討ください。\n気になる点があれば購入前にコメントください。\n\n【商品情報】\n・商品名：${title}\n・状態：${st}\n・付属品：必要に応じて追記してください\n\n【発送】\n・簡易梱包で発送予定です。\n・できるだけ迅速に対応します。\n\n※採寸、傷・汚れ、動作、付属品など実物確認後に追記してください。`,photo=`構図：商品を中央。正面1枚＋斜め45度1枚を基本\n背景：${BG[bg]}\n明るさ：影が強すぎない自然光風\n追加：ロゴ・タグ・傷・付属品の寄り写真`;return{title,description:desc,price:Math.max(300,Math.round((+x.sell||0)/100)*100),background_preset:bg,photo_guidance:photo,linked_purchase_url:x.url||'',linked_purchase_title:x.title||''}}
+function updateItem(id,fn){let h=history(),i=h.findIndex(x=>x.id===id);if(i<0)return;h[i]=fn(h[i]);save(h)}
+function decorate(){let h=history(),cards=[...document.querySelectorAll('#history .history-item')];cards.forEach((c,i)=>{if(c.dataset.salesUi)return;let x=h[i];if(!x)return;c.dataset.salesUi='1';x.id||(x.id='h'+Date.now()+i);let d=x.sales_draft||draft(x),wrap=document.createElement('div');wrap.style.cssText='margin-top:10px;padding:10px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff';wrap.innerHTML=`<div style="font-weight:800;font-size:13px">販売下書き</div><div class="small" style="margin-top:5px">${x.purchase_status==='purchased'?'仕入済み':'候補'}｜タイトル・説明・価格を生成済み</div><details style="margin-top:7px"><summary style="cursor:pointer;font-weight:700">内容を見る</summary><div class="small" style="white-space:pre-wrap;margin-top:6px"><b>タイトル</b>\n${esc(d.title)}\n\n<b>説明文</b>\n${esc(d.description)}\n\n<b>価格</b> ${yen(d.price)}\n\n<b>画像メモ</b>\n${esc(d.photo_guidance)}</div></details>`;
+let row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px';let mk=(t,fn,pri=false)=>{let b=document.createElement('button');b.textContent=t;b.className='btn'+(pri?' primary':'');b.style.cssText='padding:9px;font-size:12px';b.onclick=fn;return b};
+row.append(mk(x.purchase_status==='purchased'?'候補に戻す':'仕入済みにする',()=>{updateItem(x.id,y=>({...y,purchase_status:y.purchase_status==='purchased'?'saved':'purchased'}));location.reload()}),mk('販売文をコピー',async e=>{await navigator.clipboard.writeText(d.title+'\n\n'+d.description);e.target.textContent='コピー済み'}));wrap.append(row);
+let s=document.createElement('select');s.style.cssText='margin-top:8px;width:100%';Object.entries(BG).forEach(([v,n])=>{let o=document.createElement('option');o.value=v;o.textContent=n;o.selected=d.background_preset===v;s.append(o)});s.onchange=()=>{updateItem(x.id,y=>({...y,background_preset:s.value,sales_draft:draft({...y,background_preset:s.value})}));location.reload()};wrap.append(s);
+let row2=document.createElement('div');row2.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px';Object.keys(N).forEach(site=>row2.append(mk(N[site]+'へ下書き',async()=>{let nd=draft({...x,background_preset:s.value});updateItem(x.id,y=>({...y,purchase_status:y.purchase_status||'saved',background_preset:s.value,sales_draft:nd,draft_status:{...(y.draft_status||{}),[site]:new Date().toISOString()}}));await set(DRAFT,{targetSite:site,draft:nd,itemId:x.id,createdAt:Date.now()});location.href=SELL[site]},true)));wrap.append(row2);c.append(wrap)});save(h)}
+function input(el,v){if(!el)return false;let proto=Object.getPrototypeOf(el),setv=Object.getOwnPropertyDescriptor(proto,'value')?.set;setv?setv.call(el,v):el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return true}
+function find(a){for(let s of a){let e=document.querySelector(s);if(e&&e.offsetParent!==null&&!e.disabled)return e}return null}
+function fields(site){let C={title:['input[name*="title"]','input[placeholder*="タイトル"]','input[placeholder*="商品名"]','input[placeholder*="商品の名前"]'],desc:['textarea[name*="description"]','textarea[placeholder*="説明"]','textarea[placeholder*="本文"]','textarea'],price:['input[name*="price"]','input[placeholder*="価格"]','input[placeholder*="販売価格"]','input[inputmode="numeric"]']};return C}
+async function apply(site){let b=await get(DRAFT,null);if(!b||b.targetSite!==site||!b.draft)return false;let f=fields(site),ok=false;ok=input(find(f.title),b.draft.title)||ok;ok=input(find(f.desc),b.draft.description)||ok;ok=input(find(f.price),String(b.draft.price))||ok;if(ok){let n=document.createElement('div');n.textContent='せどりAI下書きを入力しました。写真追加・状態確認・カテゴリ設定後に「下書き保存」してください。';n.style.cssText='position:fixed;z-index:99999;left:10px;right:10px;bottom:10px;padding:11px;background:#111827;color:#fff;border-radius:10px;font-size:13px';document.body.append(n);setTimeout(()=>n.remove(),6000);await set(DRAFT,{...b,appliedAt:Date.now()});return true}return false}
+if(location.hostname===APP){window.__SEDORI_USERSCRIPT__=true;let r=await get(RESULT,null);if(r?.items){await del(RESULT);window.postMessage({type:'SEDORI_SEARCH_RESULTS',items:r.items,siteCounts:r.siteCounts||{}},location.origin)}window.addEventListener('message',async e=>{if(e.source!==window)return;if(e.data?.type==='SEDORI_START_SEARCH'){let f=e.data.filters||{},q=queue(f);await set(JOB,{filters:f,queue:q,index:0,items:[],siteCounts:{},returnUrl:location.href.split('#')[0],started:Date.now()});location.href=q[0][1]}if(e.data?.type==='SEDORI_CHECK_LOGINS')window.postMessage({type:'SEDORI_LOGIN_STATUS',status:await get(LOGIN,{})},location.origin)});new MutationObserver(()=>decorate()).observe(document.body,{childList:true,subtree:true});setTimeout(decorate,600);return}
+let site=H[location.hostname];if(!site)return;let ls=await get(LOGIN,{});ls[site]=login();if(site.startsWith('yahoo_'))ls.yahoo_fleamarket=ls.yahoo_auction=ls[site];await set(LOGIN,ls);let j=await get(JOB,null);if(j&&Date.now()-j.started<180000){let ex=j.queue[j.index];if(ex&&ex[0]===site){setTimeout(async()=>{let it=collect(site,j.filters);j.items.push(...it);j.siteCounts[site]=it.length;j.index++;if(j.index<j.queue.length){await set(JOB,j);location.href=j.queue[j.index][1]}else{await set(RESULT,{items:[...new Map(j.items.map(x=>[x.url,x])).values()],siteCounts:j.siteCounts});await del(JOB);location.href=j.returnUrl+'#search'}},4500);return}}
+let tries=0,t=setInterval(async()=>{tries++;if(await apply(site)||tries>20)clearInterval(t)},1200);
 })();

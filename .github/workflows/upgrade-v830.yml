@@ -1,0 +1,70 @@
+name: Upgrade sedori AI to v8.3.0
+
+on:
+  push:
+    paths:
+      - '.github/workflows/upgrade-v830.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch app.js and service worker
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('app.js')
+          s = p.read_text(encoding='utf-8')
+          original = s
+          s = s.replace("const VERSION='8.2.8';", "const VERSION='8.3.0';")
+          s = s.replace("const CORE='./app-v8-core.js?v=8280';", "const CORE='./app-v8-core.js?v=8300';")
+
+          old = """  const strictReady=strictPricing.rows.length>=2,categoryReady=genericPricing.rows.length>=5&&genericStrong>=2,priceReady=strictIdentity?strictReady:categoryReady;\n  const priceRows=strictIdentity?strictPricing.rows:genericPricing.rows,priceSpread=strictIdentity?strictPricing.spread:genericPricing.spread;\n  const priceSourceCount=new Set(priceRows.map(z=>z.x.source)).size,priceCompCount=priceRows.length,mode=strictIdentity?(priceReady?'strict':'strict-insufficient'):(priceReady?'category':'category-insufficient');"""
+          new = """  const strictReady=strictPricing.rows.length>=2;\n  const assistedPool=robustRows(scored.filter(z=>z.sim.grade==='A'||z.sim.grade==='B'));\n  const assistedSources=new Set(assistedPool.rows.map(z=>z.x.source)).size;\n  const assistedReady=strictIdentity&&!strictReady&&assistedPool.rows.length>=3&&aCount>=1&&(aCount+bCount)>=3&&assistedSources>=2;\n  const categoryReady=genericPricing.rows.length>=4&&genericStrong>=1&&new Set(genericPricing.rows.map(z=>z.x.source)).size>=2;\n  const priceReady=strictIdentity?(strictReady||assistedReady):categoryReady;\n  const priceRows=strictIdentity?(strictReady?strictPricing.rows:assistedPool.rows):genericPricing.rows,priceSpread=strictIdentity?(strictReady?strictPricing.spread:assistedPool.spread):genericPricing.spread;\n  const priceSourceCount=new Set(priceRows.map(z=>z.x.source)).size,priceCompCount=priceRows.length,mode=strictIdentity?(strictReady?'strict':assistedReady?'assisted':'strict-insufficient'):(priceReady?'category':'category-insufficient');"""
+          if old not in s:
+              raise SystemExit('target block 1 not found')
+          s = s.replace(old, new)
+
+          old = """  if(strictIdentity){conf=Math.min(26,evidence.rows.length*4)+Math.min(42,strictPricing.rows.length*12)+Math.min(10,priceSourceCount*5)+Math.min(10,target.strength);if(priceSpread>.65)conf-=18;else if(priceSpread>.45)conf-=10;if(strictPricing.rows.length===0)conf=Math.min(conf,35);else if(strictPricing.rows.length===1)conf=Math.min(conf,49);if(target.strength<4)conf=Math.min(conf,58)}\n  else{conf=Math.min(32,genericPricing.rows.length*5)+Math.min(24,genericStrong*6)+Math.min(10,priceSourceCount*5)+Math.min(10,target.strength);if(priceSpread>.70)conf-=18;else if(priceSpread>.50)conf-=10;if(!categoryReady)conf=Math.min(conf,49);else conf=Math.min(conf,69)}"""
+          new = """  if(strictIdentity){conf=Math.min(26,evidence.rows.length*4)+Math.min(42,(strictReady?strictPricing.rows.length:assistedPool.rows.length)*10)+Math.min(10,priceSourceCount*5)+Math.min(10,target.strength);if(priceSpread>.65)conf-=18;else if(priceSpread>.45)conf-=10;if(strictReady){conf=Math.max(conf,65)}else if(assistedReady){conf=Math.min(Math.max(conf,52),64)}else if(strictPricing.rows.length===0)conf=Math.min(conf,35);else if(strictPricing.rows.length===1)conf=Math.min(conf,49);if(target.strength<4)conf=Math.min(conf,58)}\n  else{conf=Math.min(32,genericPricing.rows.length*5)+Math.min(24,genericStrong*6)+Math.min(10,priceSourceCount*5)+Math.min(10,target.strength);if(priceSpread>.70)conf-=18;else if(priceSpread>.50)conf-=10;if(!categoryReady)conf=Math.min(conf,49);else conf=Math.min(Math.max(conf,50),69)}"""
+          if old not in s:
+              raise SystemExit('target block 2 not found')
+          s = s.replace(old, new)
+
+          old = """  const priceReason=strictIdentity?(priceReady?'厳密一致した同等品2件以上を使って売価を算定':'厳密一致した同等品が2件未満のため売価を算定できません'):(priceReady?'高一致2件以上を含むカテゴリ相場5件以上を使って参考売価を算定':'高一致2件以上を含むカテゴリ相場の比較件数が不足しているため売価を算定できません');\n  return{rows:evidence.rows,compCount:evidence.rows.length,aCount,bCount,cCount,sourceCount,removed:evidence.removed,spread:evidence.spread,confidence,confidenceScore:conf,conservative:low,standard:sell.price||globalStd,aggressive:high,median:med,sell,id:target,mode,strictIdentity,priceReady,priceCompCount,priceSourceCount,genericStrong,priceReason};"""
+          new = """  const priceReason=strictIdentity?(strictReady?'厳密一致した同等品2件以上を使って売価を算定':assistedReady?'厳密一致1件以上＋高一致を含む3件以上・2サイト以上で参考売価を算定':'厳密一致・高一致の比較根拠が不足しているため売価を算定できません'):(priceReady?'高一致を含むカテゴリ相場4件以上・2サイト以上を使って参考売価を算定':'高一致を含むカテゴリ相場4件以上・2サイト以上の比較根拠が不足しています');\n  return{rows:evidence.rows,compCount:evidence.rows.length,aCount,bCount,cCount,sourceCount,removed:evidence.removed,spread:evidence.spread,confidence,confidenceScore:conf,conservative:low,standard:sell.price||globalStd,aggressive:high,median:med,sell,id:target,mode,strictIdentity,priceReady,buyEvidenceReady:strictReady,assistedReady,priceCompCount,priceSourceCount,genericStrong,priceReason};"""
+          if old not in s:
+              raise SystemExit('target block 3 not found')
+          s = s.replace(old, new)
+
+          s = s.replace("const buyReady=m.aCount>=2&&m.confidenceScore>=65&&std.profit>=settings.minProfit&&std.roi>=settings.minRoi&&low.profit>=Math.max(500,settings.minProfit*.20);", "const buyReady=m.buyEvidenceReady&&m.aCount>=2&&m.confidenceScore>=65&&std.profit>=settings.minProfit&&std.roi>=settings.minRoi&&low.profit>=Math.max(500,settings.minProfit*.20);")
+          s = s.replace("else if(std.profit>=settings.watchProfit&&std.roi>=settings.watchRoi&&m.confidenceScore>=50){verdict='WATCH';reason.push('利益余地あり。ただし仕入候補の安全条件には未到達')}", "else if(std.profit>=settings.watchProfit&&std.roi>=settings.watchRoi&&m.confidenceScore>=50){verdict='WATCH';reason.push(m.assistedReady?'近似同等品では利益余地あり。ただし厳密一致2件未満のため要確認':'利益余地あり。ただし仕入候補の安全条件には未到達')}")
+          s = s.replace("function modeLabel(m){return({strict:'厳密一致','strict-insufficient':'厳密一致不足',category:'カテゴリ参考相場','category-insufficient':'カテゴリ相場不足'})[m]||m}", "function modeLabel(m){return({strict:'厳密一致',assisted:'近似同等品参考相場','strict-insufficient':'厳密一致不足',category:'カテゴリ参考相場','category-insufficient':'カテゴリ相場不足'})[m]||m}")
+          s = s.replace("※販売中の表示価格を使った推定で、成約価格ではありません。厳密一致は2件以上、一般商品は高一致2件以上を含むカテゴリ相場5件以上を最低条件とし、カテゴリ相場だけでは「仕入候補」にしません。", "※販売中の表示価格を使った推定で、成約価格ではありません。仕入候補は厳密一致2件以上を維持。近似同等品は厳密一致1件以上＋高一致を含む3件以上・2サイト以上、一般商品は高一致を含むカテゴリ相場4件以上・2サイト以上で参考売価を出しますが、いずれも厳密一致2件未満では「要確認」までに抑えます。")
+          s = s.replace("setHeader('v'+VERSION+' 実用版｜厳密一致・カテゴリ相場・自己診断合格');", "setHeader('v'+VERSION+' 実用版｜保留削減・近似同等品・安全判定');")
+
+          if s == original:
+              raise SystemExit('no changes made')
+          p.write_text(s, encoding='utf-8')
+
+          sw = Path('sw.js')
+          w = sw.read_text(encoding='utf-8')
+          w = w.replace("const CACHE='sedori-ai-v23';", "const CACHE='sedori-ai-v24';")
+          w = w.replace("./app.js?v=8280", "./app.js?v=8300")
+          w = w.replace("./boot-status.js?v=8280", "./boot-status.js?v=8300")
+          w = w.replace("./app-v8-core.js?v=8280", "./app-v8-core.js?v=8300")
+          sw.write_text(w, encoding='utf-8')
+          PY
+      - name: Commit upgrade
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js sw.js
+          git diff --cached --quiet && exit 0
+          git commit -m "Upgrade sedori AI to v8.3.0 candidate extraction"
+          git push

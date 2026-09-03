@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         せどりAI v4 実用版 5サイト検索＋販売下書き
 // @namespace    https://m3924saim-eng.github.io/
-// @version      4.1.0
-// @description  5サイト横断検索を安定化し、ログイン状態をSPA遷移後も自動更新。仕入候補・販売下書き入力も補助します。
+// @version      4.1.1
+// @description  5サイト横断検索とログイン確認を安定化。ログイン状態は日本語表示し、復帰時にも自動更新します。
 // @match        https://m3924saim-eng.github.io/*
 // @match        https://jp.mercari.com/*
 // @match        https://fril.jp/*
@@ -15,13 +15,15 @@
 // @run-at       document-idle
 // ==/UserScript==
 (async()=>{'use strict';
-const APP='m3924saim-eng.github.io',JOB='sedori_job_v4',RESULT='sedori_result_v4',LOGIN='sedori_login_v4',DRAFT='sedori_draft_v4',enc=encodeURIComponent;
+const APP='m3924saim-eng.github.io',JOB='sedori_job_v4',RESULT='sedori_result_v4',LOGIN='sedori_login_v4',LOGIN_TIME='sedori_login_time_v4',DRAFT='sedori_draft_v4',enc=encodeURIComponent;
 const H={'jp.mercari.com':'mercari','fril.jp':'rakuma','paypayfleamarket.yahoo.co.jp':'yahoo_fleamarket','auctions.yahoo.co.jp':'yahoo_auction','jmty.jp':'jmty'};
 const N={mercari:'メルカリ',rakuma:'楽天ラクマ',yahoo_fleamarket:'Yahoo!フリマ',yahoo_auction:'Yahoo!オークション',jmty:'ジモティー'};
+const SITE_IDS=['mercari','rakuma','yahoo_fleamarket','yahoo_auction','jmty'];
+const LOGIN_URLS={mercari:'https://jp.mercari.com/',rakuma:'https://fril.jp/',yahoo_fleamarket:'https://paypayfleamarket.yahoo.co.jp/',yahoo_auction:'https://auctions.yahoo.co.jp/',jmty:'https://jmty.jp/'};
 const SELL={mercari:'https://jp.mercari.com/sell',rakuma:'https://fril.jp/',yahoo_fleamarket:'https://paypayfleamarket.yahoo.co.jp/sell',yahoo_auction:'https://auctions.yahoo.co.jp/',jmty:'https://jmty.jp/'};
 const BG={clean_white:'白背景・自然光風',wood_table:'木目テーブル背景',concrete_gray:'ライトグレー背景',soft_beige:'ベージュ背景',dark_luxury:'ダーク背景・高級感'};
 const get=async(k,d)=>{try{return await GM.getValue(k,d)}catch{return d}},set=async(k,v)=>{try{await GM.setValue(k,v)}catch(e){console.error(e)}},del=async k=>{try{await GM.deleteValue(k)}catch{}};
-const sleep=ms=>new Promise(r=>setTimeout(r,ms)),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),yen=n=>'¥'+Math.round(Number(n)||0).toLocaleString('ja-JP');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms)),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c])),yen=n=>'¥'+Math.round(Number(n)||0).toLocaleString('ja-JP');
 function queue(f){const q=enc(f.query),a=f.min||0,b=f.max||0,mercariOrder=f.sort==='price_desc'?'desc':'asc',mercariSort=f.sort==='newest'?'created_time':'price';return[
  ['mercari',`https://jp.mercari.com/search?keyword=${q}&price_min=${a}&price_max=${b}&status=${f.onSale?'on_sale':'all'}&sort=${mercariSort}&order=${mercariOrder}`],
  ['rakuma',`https://fril.jp/s?query=${q}&min=${a}&max=${b}&transaction=${f.onSale?'selling':'all'}`],
@@ -45,11 +47,11 @@ function login(){
  return'unknown'
 }
 async function saveLoginState(site,state){
- const ls=await get(LOGIN,{}),prev=ls[site];
+ const ls=await get(LOGIN,{}),tm=await get(LOGIN_TIME,{}),prev=ls[site];
  if(state==='unknown'&&(prev==='in'||prev==='out'))return prev;
- ls[site]=state;
- if(site.startsWith('yahoo_')){ls.yahoo_fleamarket=state;ls.yahoo_auction=state}
- await set(LOGIN,ls);
+ ls[site]=state;tm[site]=Date.now();
+ if(site.startsWith('yahoo_')){ls.yahoo_fleamarket=state;ls.yahoo_auction=state;tm.yahoo_fleamarket=tm[site];tm.yahoo_auction=tm[site]}
+ await set(LOGIN,ls);await set(LOGIN_TIME,tm);
  return state
 }
 async function refreshLoginState(site){return saveLoginState(site,login())}
@@ -72,9 +74,45 @@ function decorate(){const h=history(),cards=[...document.querySelectorAll('#hist
 function input(el,v){if(!el)return false;const proto=Object.getPrototypeOf(el),setv=Object.getOwnPropertyDescriptor(proto,'value')?.set;setv?setv.call(el,v):el.value=v;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return true}
 function find(a){for(const s of a){const e=document.querySelector(s);if(e&&e.offsetParent!==null&&!e.disabled)return e}return null}
 function fields(){return{title:['input[name*="title"]','input[placeholder*="タイトル"]','input[placeholder*="商品名"]','input[placeholder*="商品の名前"]'],desc:['textarea[name*="description"]','textarea[placeholder*="説明"]','textarea[placeholder*="本文"]','textarea'],price:['input[name*="price"]','input[placeholder*="価格"]','input[placeholder*="販売価格"]','input[inputmode="numeric"]']}}
-async function apply(site){const b=await get(DRAFT,null);if(!b||b.targetSite!==site||!b.draft)return false;const f=fields(),ok=[input(find(f.title),b.draft.title),input(find(f.desc),b.draft.description),input(find(f.price),String(b.draft.price))].some(Boolean);if(ok){const n=document.createElement('div');n.textContent='せどりAIの下書きを入力しました。写真・状態・カテゴリを確認してから保存/出品してください。';n.style.cssText='position:fixed;z-index:99999;left:10px;right:10px;bottom:10px;padding:11px;background:#111827;color:#fff;border-radius:10px;font-size:13px';document.body.append(n);setTimeout(()=>n.remove(),6500);await set(DRAFT,{...b,appliedAt:Date.now()});return true}return false}
+async function apply(site){const b=await get(DRAFT,null);if(!b||b.targetSite!==site||!b.draft)return false;const f=fields(),ok=[input(find(f.title),b.draft.title),input(find(f.desc),b.draft.description),input(find(f.price),String(b.draft.price))].some(Boolean);if(ok){const n=document.createElement('div');n.textContent='せどりAIの下書きを入力しました。写真・状態・カテゴリを確認してから保存または出品してください。';n.style.cssText='position:fixed;z-index:99999;left:10px;right:10px;bottom:10px;padding:11px;background:#111827;color:#fff;border-radius:10px;font-size:13px';document.body.append(n);setTimeout(()=>n.remove(),6500);await set(DRAFT,{...b,appliedAt:Date.now()});return true}return false}
 
-if(location.hostname===APP){window.__SEDORI_USERSCRIPT__=true;window.__SEDORI_USERSCRIPT_VERSION__='4.1.0';const r=await get(RESULT,null);if(r?.items){await del(RESULT);window.postMessage({type:'SEDORI_SEARCH_RESULTS',items:r.items,siteCounts:r.siteCounts||{},errors:r.errors||{}},location.origin)}window.addEventListener('message',async e=>{if(e.source!==window)return;if(e.data?.type==='SEDORI_START_SEARCH'){const f=e.data.filters||{},q=queue(f);await set(JOB,{version:4,filters:f,queue:q,index:0,items:[],siteCounts:{},errors:{},returnUrl:location.href.split('#')[0],started:Date.now()});location.href=q[0][1]}if(e.data?.type==='SEDORI_CHECK_LOGINS')window.postMessage({type:'SEDORI_LOGIN_STATUS',status:await get(LOGIN,{})},location.origin)});new MutationObserver(()=>decorate()).observe(document.body,{childList:true,subtree:true});setTimeout(decorate,600);return}
+function appLoginRowHtml(id,state,time){
+ const label=state==='in'?'ログイン済み':state==='out'?'要ログイン':'未確認';
+ const statusClass=state==='in'?'status-ok':'status-ng';
+ const when=time?`<small style="display:block;color:#667085;font-size:10px;margin-top:2px">前回確認 ${new Date(time).toLocaleString('ja-JP')}</small>`:'';
+ const link=state==='in'?'':`<a class="btn" href="${LOGIN_URLS[id]}" target="_blank" rel="noopener" style="margin-left:8px;padding:6px 10px;font-size:12px;white-space:nowrap">${state==='out'?'ログインへ':'サイトを開いて確認'}</a>`;
+ return `<div class="login-row"><span>${N[id]}${when}</span><span style="display:flex;align-items:center"><span class="${statusClass}">${label}</span>${link}</span></div>`;
+}
+async function appLoginStatus(){
+ const raw=await get(LOGIN,{}),times=await get(LOGIN_TIME,{}),status={};
+ SITE_IDS.forEach(id=>status[id]=raw[id]||'unknown');
+ const box=document.getElementById('loginResults');
+ if(box)box.innerHTML=SITE_IDS.map(id=>appLoginRowHtml(id,status[id],times[id])).join('');
+ window.postMessage({type:'SEDORI_LOGIN_STATUS',status,checkedAt:Date.now(),userscriptVersion:'4.1.1'},location.origin);
+ return status;
+}
+function installLoginButton(){
+ const b=document.getElementById('checkLoginBtn');
+ if(!b||b.dataset.sedoriLogin411)return;
+ b.dataset.sedoriLogin411='1';
+ b.addEventListener('click',async e=>{
+   e.preventDefault();e.stopImmediatePropagation();
+   b.disabled=true;b.textContent='確認しています…';
+   const box=document.getElementById('loginResults');
+   if(box)box.innerHTML=SITE_IDS.map(id=>`<div class="login-row"><span>${N[id]}</span><span>確認中…</span></div>`).join('');
+   try{await appLoginStatus()}catch(err){console.error(err);if(box)box.innerHTML='<div class="login-row"><span>ログイン確認</span><span class="status-ng">確認に失敗しました</span></div>'}
+   setTimeout(()=>{b.disabled=false;b.textContent='5サイトのログイン状態を確認'},250);
+ },true);
+}
+
+if(location.hostname===APP){
+ window.__SEDORI_USERSCRIPT__=true;window.__SEDORI_USERSCRIPT_VERSION__='4.1.1';
+ const r=await get(RESULT,null);if(r?.items){await del(RESULT);window.postMessage({type:'SEDORI_SEARCH_RESULTS',items:r.items,siteCounts:r.siteCounts||{},errors:r.errors||{}},location.origin)}
+ window.addEventListener('message',async e=>{if(e.source!==window)return;if(e.data?.type==='SEDORI_START_SEARCH'){const f=e.data.filters||{},q=queue(f);await set(JOB,{version:4,filters:f,queue:q,index:0,items:[],siteCounts:{},errors:{},returnUrl:location.href.split('#')[0],started:Date.now()});location.href=q[0][1]}if(e.data?.type==='SEDORI_CHECK_LOGINS')await appLoginStatus()});
+ installLoginButton();new MutationObserver(()=>{decorate();installLoginButton()}).observe(document.body,{childList:true,subtree:true});setTimeout(()=>{decorate();installLoginButton();appLoginStatus()},600);
+ addEventListener('pageshow',()=>setTimeout(appLoginStatus,150));addEventListener('focus',()=>setTimeout(appLoginStatus,150));document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(appLoginStatus,150)});
+ return
+}
 const site=H[location.hostname];if(!site)return;await refreshLoginState(site);watchLoginState(site);const j=await get(JOB,null);if(j&&Date.now()-j.started<8*60*1000){const ex=j.queue?.[j.index];if(ex&&ex[0]===site){await finishSite(site,j);return}}else if(j){await del(JOB)}
 let tries=0,timer=setInterval(async()=>{tries++;if(await apply(site)||tries>24)clearInterval(timer)},1000);
 })();

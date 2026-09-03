@@ -151,7 +151,7 @@ function buildMarket(item,all,query,settings=DEFAULTS){
   const genericStrong=genericPricing.rows.filter(z=>z.sim.grade==='A'||z.sim.grade==='B').length;
 
   const strictReady=strictPricing.rows.length>=2;
-  const categoryReady=genericPricing.rows.length>=5&&genericStrong>=3;
+  const categoryReady=genericPricing.rows.length>=5&&genericStrong>=2;
   const priceReady=strictIdentity?strictReady:categoryReady;
   const priceRows=strictIdentity?strictPricing.rows:genericPricing.rows;
   const priceSpread=strictIdentity?strictPricing.spread:genericPricing.spread;
@@ -206,7 +206,7 @@ function buildMarket(item,all,query,settings=DEFAULTS){
 
   let priceReason='';
   if(strictIdentity)priceReason=priceReady?'厳密一致した同等品2件以上を使って売価を算定':'厳密一致した同等品が2件未満のため売価を算定できません';
-  else priceReason=priceReady?'同カテゴリの高一致・参考一致5件以上を使って参考売価を算定':'カテゴリ相場の比較件数が不足しているため売価を算定できません';
+  else priceReason=priceReady?'高一致2件以上を含むカテゴリ相場5件以上を使って参考売価を算定':'高一致2件以上を含むカテゴリ相場の比較件数が不足しているため売価を算定できません';
 
   return{
     rows:evidence.rows,compCount:evidence.rows.length,aCount,bCount,cCount,sourceCount,priceSourceCount,priceCompCount,
@@ -308,7 +308,7 @@ function renderCandidates(items,siteCounts={},errors={}){
     if(c.anomaly)riskText.push('相場より極端に安い');
     const saleLabel=m.strictIdentity?'標準売価':'参考売価';
     const destination=m.priceReady?esc(siteName(m.sell.site)):'—';
-    body.innerHTML=`<div class="source-line">検索元：${esc(siteName(x.source))}｜${esc(m.id.cat.label)}｜信頼度 ${m.confidenceScore}/100（${m.confidence}）</div><h3 class="candidate-title">${esc(x.title)}</h3><div class="moneyline">仕入価格 ${yen(x.price)} → 販売候補 ${destination}｜${saleLabel} ${m.standard?yen(m.standard):'算定不可'}</div><div class="profitline"><b>想定利益 ${m.standard?yen(c.profit):'—'}</b>｜投資利益率 ${m.standard?pct(c.roi):'—'}｜最大仕入目安 ${m.standard?yen(c.maxBuy):'—'}</div><div class="candidate-data">相場：安全側 ${m.conservative?yen(m.conservative):'—'} ／ 標準 ${m.standard?yen(m.standard):'—'} ／ 上限側 ${m.aggressive?yen(m.aggressive):'—'}<br>販売コスト：手数料仮定 ${m.sell.fee}%・送料仮定 ${yen(m.sell.ship)}｜販売先の比較品 ${m.sell.sourceComps}件<br>比較：厳密一致 ${m.aCount}件・高一致 ${m.bCount}件・参考一致 ${m.cCount}件｜比較合計 ${m.compCount}件｜${m.sourceCount}サイト｜価格根拠 ${m.priceCompCount}件／${m.priceSourceCount||0}サイト｜除外 ${m.removed}件｜ばらつき ${spreadPct}%｜判定方式 ${modeLabel(m.mode)}<br>商品識別：${esc(identityText(m))}<br>判定理由：${esc(c.reason)}${riskText.length?`<br><span class="risk">注意：${esc(riskText.join(' ／ '))}</span>`:''}<br><span style="font-size:11px">※販売中の表示価格を使った推定で、成約価格ではありません。厳密一致は2件以上、一般商品はカテゴリ相場5件以上を最低条件とし、カテゴリ相場だけでは「仕入候補」にしません。</span></div><div class="verdict ${c.verdict.toLowerCase()}">${verdictLabel(c.verdict)}<span class="badge">評価 ${c.score}点</span></div>`;
+    body.innerHTML=`<div class="source-line">検索元：${esc(siteName(x.source))}｜${esc(m.id.cat.label)}｜信頼度 ${m.confidenceScore}/100（${m.confidence}）</div><h3 class="candidate-title">${esc(x.title)}</h3><div class="moneyline">仕入価格 ${yen(x.price)} → 販売候補 ${destination}｜${saleLabel} ${m.standard?yen(m.standard):'算定不可'}</div><div class="profitline"><b>想定利益 ${m.standard?yen(c.profit):'—'}</b>｜投資利益率 ${m.standard?pct(c.roi):'—'}｜最大仕入目安 ${m.standard?yen(c.maxBuy):'—'}</div><div class="candidate-data">相場：安全側 ${m.conservative?yen(m.conservative):'—'} ／ 標準 ${m.standard?yen(m.standard):'—'} ／ 上限側 ${m.aggressive?yen(m.aggressive):'—'}<br>販売コスト：手数料仮定 ${m.sell.fee}%・送料仮定 ${yen(m.sell.ship)}｜販売先の比較品 ${m.sell.sourceComps}件<br>比較：厳密一致 ${m.aCount}件・高一致 ${m.bCount}件・参考一致 ${m.cCount}件｜比較合計 ${m.compCount}件｜${m.sourceCount}サイト｜価格根拠 ${m.priceCompCount}件／${m.priceSourceCount||0}サイト｜除外 ${m.removed}件｜ばらつき ${spreadPct}%｜判定方式 ${modeLabel(m.mode)}<br>商品識別：${esc(identityText(m))}<br>判定理由：${esc(c.reason)}${riskText.length?`<br><span class="risk">注意：${esc(riskText.join(' ／ '))}</span>`:''}<br><span style="font-size:11px">※販売中の表示価格を使った推定で、成約価格ではありません。厳密一致は2件以上、一般商品は高一致2件以上を含むカテゴリ相場5件以上を最低条件とし、カテゴリ相場だけでは「仕入候補」にしません。</span></div><div class="verdict ${c.verdict.toLowerCase()}">${verdictLabel(c.verdict)}<span class="badge">評価 ${c.score}点</span></div>`;
     const details=document.createElement('details'),sum=document.createElement('summary');
     sum.textContent=`根拠を見る（比較 ${m.compCount}件／価格根拠 ${m.priceCompCount}件）`;details.appendChild(sum);
     m.rows.slice(0,10).forEach(z=>{const d=document.createElement('div');d.className='peer';d.innerHTML=`<b>${gradeLabel(z.sim.grade)} ${Math.round(z.sim.score*100)}%</b>｜${esc(siteName(z.x.source))} ${yen(z.x.price)}｜${esc(z.sim.reason)}<br><a href="${esc(z.x.url)}" target="_blank" rel="noopener">${esc(z.x.title)}</a>`;details.appendChild(d)});
@@ -421,7 +421,7 @@ function renderHistory(){
       strictOne.priceReady===false&&strictOne.standard===0,
       A.opportunity(strictTarget,strictOne,A.DEFAULTS).verdict==='HOLD',
       strictTwo.priceReady===true&&strictTwo.strictIdentity===true&&strictTwo.standard>0,
-      generic.strictIdentity===false&&generic.priceReady===true&&generic.priceCompCount>=5,
+      generic.strictIdentity===false&&generic.priceReady===true&&generic.priceCompCount>=5&&generic.genericStrong>=2,
       genericVerdict==='WATCH'||genericVerdict==='PASS'
     ];
     window.__SEDORI_SELFTEST__={passed:checks.filter(Boolean).length,total:checks.length,ok:checks.every(Boolean),checks};

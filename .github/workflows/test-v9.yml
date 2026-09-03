@@ -1,0 +1,57 @@
+name: Test sedori AI v9
+
+on:
+  push:
+    paths:
+      - 'app-v8.3-logic.js'
+      - 'app-v8-core.js'
+      - 'boot-status.js'
+      - 'index.html'
+      - 'sw.js'
+      - 'test-v9.js'
+      - '.github/workflows/test-v9.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax checks
+        run: |
+          node --check app-v8-core.js
+          node --check app-v8.3-logic.js
+          node --check app.js
+          node --check boot-status.js
+          node --check sedori-ai.user.js
+          node --check sw.js
+      - name: v9 regression tests
+        run: node test-v9.js
+      - name: v9 asset/version consistency
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          index=Path('index.html').read_text(encoding='utf-8')
+          sw=Path('sw.js').read_text(encoding='utf-8')
+          boot=Path('boot-status.js').read_text(encoding='utf-8')
+          logic=Path('app-v8.3-logic.js').read_text(encoding='utf-8')
+          checks={
+            'index title': '<title>せどりAI v9.0.0</title>' in index,
+            'index v9 logic cache key': 'app-v8.3-logic.js?v=9000' in index,
+            'index v9 boot cache key': 'boot-status.js?v=9000' in index,
+            'logic version': "const VERSION='9.0.0';" in logic,
+            'boot version': "const UI_VERSION='9.0.0';" in boot,
+            'service worker v9 logic': './app-v8.3-logic.js?v=9000' in sw,
+            'service worker v9 boot': './boot-status.js?v=9000' in sw,
+          }
+          failed=[k for k,v in checks.items() if not v]
+          if failed:
+              raise SystemExit('consistency checks failed: '+', '.join(failed))
+          print('v9 consistency checks passed')
+          PY

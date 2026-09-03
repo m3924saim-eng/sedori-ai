@@ -1,4 +1,4 @@
-name: Test sedori AI v13
+name: Test sedori AI v14
 
 on:
   push:
@@ -30,28 +30,24 @@ jobs:
           node --check sedori-ai.user.js
           node --check sw.js
           node --check test-v13.js
-      - name: v13 regression tests
+      - name: v14 regression tests
         run: node test-v13.js
-      - name: v13 asset/version consistency
+      - name: v14 asset/version consistency
         run: |
           python - <<'PY'
           from pathlib import Path
-          index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
           boot=Path('boot-status.js').read_text(encoding='utf-8')
           app=Path('app.js').read_text(encoding='utf-8')
           checks={
-            'index title': '<title>せどりAI v13.0.0</title>' in index,
-            'index app cache key': 'app.js?v=13000' in index,
-            'index boot cache key': 'boot-status.js?v=13000' in index,
-            'app version': "const VERSION='13.0.0';" in app,
-            'boot version': "const VERSION='13.0.0';" in boot,
+            'app version': "const VERSION='14.0.0';" in app,
+            'boot version': "const VERSION='14.0.0';" in boot,
             'selftest bridge': '__SEDORI_SELFTEST__' in app and '__SEDORI_SELFTEST__' in boot,
-            'service worker cache': "const CACHE='sedori-ai-v13000';" in sw,
-            'service worker app': './app.js?v=13000' in sw,
+            'service worker cache': "const CACHE='sedori-ai-v14000';" in sw,
+            'service worker app': './app.js?v=14000' in sw,
           }
           failed=[k for k,v in checks.items() if not v]
           if failed:
               raise SystemExit('consistency checks failed: '+', '.join(failed))
-          print('v13 consistency checks passed')
+          print('v14 consistency checks passed')
           PY

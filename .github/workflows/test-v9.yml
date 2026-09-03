@@ -34,7 +34,7 @@ jobs:
           node --check test-v13.js
       - name: v14 regression tests
         run: node test-v13.js
-      - name: v14.2 asset and login consistency
+      - name: v14.3 bridge and userscript consistency
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -46,24 +46,27 @@ jobs:
           index=Path('index.html').read_text(encoding='utf-8')
           checks={
             'base engine version': "const VERSION='14.0.0';" in app,
-            'runtime ui version': "UI_VERSION='14.2.0'" in boot,
-            'runtime module version': "const VERSION='14.2.0';" in hotfix,
+            'runtime ui version': "UI_VERSION='14.3.0'" in boot,
+            'runtime module version': "const VERSION='14.3.0';" in hotfix,
             'selftest bridge': '__SEDORI_SELFTEST__' in app and '__SEDORI_SELFTEST__' in boot,
-            'hotfix loader': 'runtime-fix-v14.1.js?v=14200' in boot,
-            'index hotfix': 'runtime-fix-v14.1.js?v=14200' in index,
-            'service worker cache': "const CACHE='sedori-ai-v14200';" in sw,
-            'service worker hotfix': './runtime-fix-v14.1.js?v=14200' in sw,
-            'service worker userscript': './sedori-ai.user.js?v=430' in sw,
-            'userscript version': '// @version      4.3.0' in userscript,
+            'hotfix loader': 'runtime-fix-v14.1.js?v=14300' in boot,
+            'index loads runtime': 'runtime-fix-v14.1.js' in index,
+            'service worker cache': "const CACHE='sedori-ai-v14300';" in sw,
+            'service worker hotfix': './runtime-fix-v14.1.js?v=14300' in sw,
+            'service worker userscript': './sedori-ai.user.js' in sw,
+            'userscript version': '// @version      4.4.0' in userscript,
             'content injection': '// @inject-into  content' in userscript,
-            'tab bridge grants': '// @grant        GM.getTab' in userscript and '// @grant        GM.saveTab' in userscript,
-            'fresh login report': 'sedori_login_report_v43' in userscript,
-            'login job': 'sedori_login_job_v43' in userscript,
-            'unsupported listener removed': 'GM.addValueChangeListener' not in userscript,
-            'direct v4.3 link': 'sedori-ai.user.js?v=430' in index,
+            'minimal GM grants': '// @grant        GM.getValue' in userscript and '// @grant        GM.setValue' in userscript and '// @grant        GM.deleteValue' in userscript,
+            'no tab bridge dependency': 'GM.getTab' not in userscript and 'GM.saveTab' not in userscript,
+            'dom command bridge runtime': 'sedoriBridgeCommand' in hotfix,
+            'dom command bridge userscript': 'sedoriBridgeCommand' in userscript,
+            'dom result bridge': 'sedoriBridgeResult' in hotfix and 'sedoriBridgeResult' in userscript,
+            'connected marker': 'sedoriUserscript' in hotfix and 'sedoriUserscript' in userscript,
+            'login report': 'sedori_login_report_v44' in userscript,
+            'search job': 'sedori_search_job_v44' in userscript,
           }
           failed=[k for k,v in checks.items() if not v]
           if failed:
               raise SystemExit('consistency checks failed: '+', '.join(failed))
-          print('v14.2 consistency checks passed')
+          print('v14.3 consistency checks passed')
           PY

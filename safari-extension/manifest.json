@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "せどりAI Safari連携",
+  "version": "1.0.0",
+  "description": "7サイトの商品候補をせどりAIへ取り込みます。",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": ["https://m3924saim-eng.github.io/*", "https://jp.mercari.com/*", "https://fril.jp/*", "https://paypayfleamarket.yahoo.co.jp/*", "https://auctions.yahoo.co.jp/*", "https://jmty.jp/*", "https://www.mbok.jp/*", "https://aucfan.com/*"],
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [
+    {"matches": ["https://m3924saim-eng.github.io/*"], "js": ["bridge.js"]},
+    {"matches": ["https://jp.mercari.com/*", "https://fril.jp/*", "https://paypayfleamarket.yahoo.co.jp/*", "https://auctions.yahoo.co.jp/*", "https://jmty.jp/*", "https://www.mbok.jp/*", "https://aucfan.com/*"], "js": ["collector.js"]}
+  ]
+}

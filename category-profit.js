@@ -60,8 +60,8 @@
   }
   function broadCategory(cat){if(cat==='wallet')return'wallet';if(['ring','necklace','bracelet','earring','watch'].includes(cat))return'accessory';if(['outer','top','bottom','shoes'].includes(cat))return'apparel';return'accessory'}
   function marketFor(item,all,query){
-    const cat=categoryOf(item.title);let peers=all.filter(x=>x.url!==item.url&&x.price>0).map(x=>({x,sim:similarity(item,x,query)})).filter(z=>z.sim>=.55);
-    if(cat.id!=='other')peers=peers.filter(z=>{const pc=categoryOf(z.x.title);return pc.id==='other'||pc.id===cat.id});
+    const ownCat=categoryOf(item.title),queryCat=categoryOf(query),cat=ownCat.id!=='other'?ownCat:queryCat;let peers=all.filter(x=>x.url!==item.url&&x.price>0).map(x=>({x,sim:similarity(item,x,query)})).filter(z=>z.sim>=.55);
+    if(cat.id!=='other')peers=peers.filter(z=>categoryOf(z.x.title).id===cat.id);
     peers.sort((a,b)=>b.sim-a.sim);
     const preferred=peers.filter(z=>z.sim>=.70);if(preferred.length>=3)peers=preferred;
     const robust=robustPeers(peers.map(z=>z.x));const prices=robust.items.map(x=>+x.price).filter(x=>x>0);
@@ -85,9 +85,9 @@
       const m=x.market,card=document.createElement('div');card.className='candidate';
       const img=document.createElement('img');img.src=x.image||'icons/icon-192.png';img.alt='';
       const body=document.createElement('div');
-      const marketText=m.compCount?`${m.category.label} ${m.compCount}件｜価格帯 ${yen(m.low)}〜${yen(m.high)}｜中央値 ${yen(m.median)}｜信頼度 ${m.confidence}`:`${m.category.label}｜同カテゴリ比較データ不足`;
+      const marketText=m.compCount?`${m.category.label} ${m.compCount}件｜中心価格帯 ${yen(m.low)}〜${yen(m.high)}｜中央値 ${yen(m.median)}｜信頼度 ${m.confidence}`:`${m.category.label}｜同カテゴリ比較データ不足`;
       const excludeText=m.removed?`（外れ値 ${m.removed}件除外）`:'';
-      body.innerHTML=`<div class="small" style="font-weight:800;color:#2563eb;margin-bottom:3px">検索サイト：${esc(sname(x.source))}｜カテゴリ：${esc(m.category.label)}</div><h3>${esc(x.title)}</h3><div class="candidate-data"><b>仕入：</b>${esc(sname(x.source))} ${yen(x.buy)} → <b>販売想定：</b>${esc(sname(x.sell_channel))} ${x.sell>0?yen(x.sell):'算出不可'}<br><b>同カテゴリ利益：</b>${x.sell>0?yen(x.expected_profit_yen):'算出不可'}｜利益率 ${x.sell>0?x.margin_pct+'%':'—'}｜販売手数料 ${x.platform_fee_pct}%・送料 ${yen(x.shipping)}込み<br><b>相場根拠：</b>${esc(marketText+excludeText)}<br><span style="font-size:11px">※販売中の取得価格から算出。実売・成約価格ではありません。</span></div><div class="verdict ${String(x.verdict).toLowerCase()}">${esc(x.verdict)} <span class="small">score ${x.score}</span></div>`;
+      body.innerHTML=`<div class="small" style="font-weight:800;color:#2563eb;margin-bottom:3px">検索サイト：${esc(sname(x.source))}｜カテゴリ：${esc(m.category.label)}</div><h3>${esc(x.title)}</h3><div class="candidate-data"><b>仕入：</b>${esc(sname(x.source))} ${yen(x.buy)} → <b>販売想定：</b>${esc(sname(x.sell_channel))} ${x.sell>0?yen(x.sell):'算出不可'}<br><b>同カテゴリ利益：</b>${x.sell>0?yen(x.expected_profit_yen):'算出不可'}｜利益率 ${x.sell>0?x.margin_pct+'%':'—'}｜販売手数料 ${x.platform_fee_pct}%・送料仮定 ${yen(x.shipping)}<br><b>相場根拠：</b>${esc(marketText+excludeText)}<br><span style="font-size:11px">※販売中の取得価格から算出。実売・成約価格ではありません。</span></div><div class="verdict ${String(x.verdict).toLowerCase()}">${esc(x.verdict)} <span class="small">score ${x.score}</span></div>`;
       const actions=document.createElement('div');actions.className='candidate-actions';
       const open=document.createElement('a');open.className='btn';open.href=x.url;open.target='_blank';open.rel='noopener';open.textContent=`${sname(x.source)}で見る`;
       const judge=document.createElement('button');judge.className='btn primary';judge.textContent='詳細判定';judge.onclick=()=>{const set=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v};set('source',x.source);set('title',x.title);set('url',x.url);set('buy',x.buy);set('sell',x.sell||0);set('comps',m.compCount);set('category',broadCategory(m.category.id));const src=document.getElementById('source');src?.dispatchEvent(new Event('change',{bubbles:true}));document.querySelector('nav button[data-tab="judgePanel"]')?.click();document.getElementById('judgeBtn')?.click()};

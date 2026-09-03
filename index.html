@@ -15,7 +15,7 @@
 </style>
 </head>
 <body>
-<header><h1>せどりAI</h1><p>v8.2.6 実用復旧版｜判定エンジン直読込・起動監視・日本語表示</p></header>
+<header><h1>せどりAI</h1><p>v8.2.6 起動安定版｜厳密一致とカテゴリ相場・自己診断</p></header>
 <main>
 <section id="searchPanel">
 <div class="notice"><b>判定方針：</b>ブランド・型番・貴金属など識別情報が強い商品は「厳密一致」2件以上で売価・利益・投資利益率を算定します。一般商品は「高一致2件以上を含むカテゴリ相場5件以上」から安全側の参考売価を算定し、厳密一致でない限り「仕入候補」にはせず「要確認」までに抑えます。販売中の表示価格は成約価格とは扱いません。</div>
@@ -28,7 +28,8 @@
 <section id="settingsPanel" class="hide"><div class="card"><h2>実用設定</h2><p class="small">判定基準・手数料はこの端末に保存します。</p><div class="grid"><div><label>仕入候補の最低利益（円）</label><input id="setMinProfit" type="number" min="0" step="100" value="3000"></div><div><label>仕入候補の最低投資利益率（%）</label><input id="setMinRoi" type="number" min="0" step="1" value="30"></div><div><label>要確認の最低利益（円）</label><input id="setWatchProfit" type="number" min="0" step="100" value="1500"></div><div><label>要確認の最低投資利益率（%）</label><input id="setWatchRoi" type="number" min="0" step="1" value="15"></div><div><label>メルカリ手数料（%）</label><input id="setFeeMercari" type="number" value="10"></div><div><label>Yahoo!フリマ手数料（%）</label><input id="setFeeYahooF" type="number" value="5"></div><div><label>Yahoo!オークション利用料（%）</label><input id="setFeeYahooA" type="number" value="10"></div><div><label>楽天ラクマ手数料（%）</label><input id="setFeeRakuma" type="number" value="10"></div><div><label>ジモティーオンライン決済（%）</label><input id="setFeeJmty" type="number" value="5"></div><div><label>候補表示件数</label><input id="setMaxCandidates" type="number" min="10" max="100" step="5" value="40"></div></div><div class="actions" style="margin-top:12px"><button class="btn primary" id="saveSettingsBtn">設定を保存</button><button class="btn" id="resetSettingsBtn">初期値に戻す</button></div><p class="small" id="settingsStatus"></p></div><div class="notice"><b>重要：</b>販売中価格ベースの推定です。「仕入候補」でも購入前に状態・真贋・付属品・送料・実際の手数料を確認してください。</div></section>
 </main>
 <nav><button data-tab="searchPanel" class="active">検索</button><button data-tab="judgePanel">判定</button><button data-tab="historyPanel">候補</button><button data-tab="settingsPanel">設定</button></nav>
-<script src="app.js?v=8260"></script>
-<script src="manual-ui.js?v=8260"></script>
+<script src="app.js?v=8261"></script>
+<script src="boot-status.js?v=8261"></script>
+<script src="manual-ui.js?v=8261"></script>
 </body>
 </html>

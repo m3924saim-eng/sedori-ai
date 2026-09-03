@@ -1,5 +1,5 @@
-const CACHE='sedori-ai-v17';
-const ASSETS=['./','./index.html','./app.js?v=8241','./manual-ui.js?v=825','./sedori-ai.user.js?v=411','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
+const CACHE='sedori-ai-v18';
+const ASSETS=['./','./index.html','./app.js?v=8241','./app-v8-core.js?v=8260','./manual-ui.js?v=825','./sedori-ai.user.js?v=411','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()])));
-self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;if(req.mode==='navigate'){e.respondWith(fetch(req).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./',copy));return resp}).catch(()=>caches.match('./').then(r=>r||caches.match('./index.html'))));return}e.respondWith(fetch(req).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put(req,copy));return resp}).catch(()=>caches.match(req)))});
+self.addEventListener('fetch',e=>{const req=e.request;if(req.method!=='GET')return;if(req.mode==='navigate'){e.respondWith(fetch(req).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put('./',copy));return resp}).catch(()=>caches.match('./').then(r=>r||caches.match('./index.html'))));return}e.respondWith(fetch(req,{cache:'no-store'}).then(resp=>{const copy=resp.clone();caches.open(CACHE).then(c=>c.put(req,copy));return resp}).catch(()=>caches.match(req)))});

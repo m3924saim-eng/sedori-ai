@@ -23,6 +23,7 @@
     .scorebar{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:10px}.scorebar>div{height:100%;background:var(--accent);width:0}
     .small{font-size:12px;color:var(--muted);line-height:1.5}.history-item{padding:10px 0;border-top:1px solid var(--line)}.history-head{display:flex;justify-content:space-between;gap:8px}.pill{font-weight:800;font-size:12px;border-radius:999px;padding:4px 8px;background:#f3f4f6}.mini-copy{margin-top:8px;border:0;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:700;background:#eef2ff;color:#1d4ed8}
     .site-results{display:grid;gap:9px;margin-top:12px}.site-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;background:#f9fafb}.site-row b{font-size:14px}.site-row span{display:block;font-size:11px;color:var(--muted);margin-top:2px}.site-tools{display:flex;gap:6px}.site-tools .btn{padding:9px 11px;font-size:12px}.search-status{margin:10px 0 0;font-size:12px;color:var(--muted)}@media(max-width:560px){.site-row{grid-template-columns:1fr}.site-tools .btn{flex:1}}
+    .candidate{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fff}.candidate img{width:72px;height:72px;object-fit:cover;border-radius:9px;background:#eef2f7}.candidate h3{font-size:14px;margin:0 0 5px;line-height:1.35}.candidate-data{font-size:12px;color:var(--muted);line-height:1.5}.candidate .verdict{font-size:16px}.candidate-actions{display:flex;gap:6px;margin-top:7px}.candidate-actions .btn{font-size:12px;padding:8px 10px;flex:1}
     nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line);padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center;z-index:6}nav button{flex:1;max-width:220px;border:0;background:#f3f4f6;border-radius:12px;padding:10px;font-weight:700}.hide{display:none!important}.notice{background:#fffaeb;border:1px solid #fedf89;color:#7a2e0e;border-radius:12px;padding:10px;font-size:12px}.question-box{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
   </style>
 </head>
@@ -66,7 +67,7 @@
   </section>
 
   <section id="searchPanel" class="hide">
-    <div class="card"><h2>7サイト一括検索</h2><label>ブランド・商品名</label><input id="searchQ" placeholder="例: Cartier リング" enterkeyhint="search" /><div class="actions" style="margin-top:12px"><button class="btn primary full" id="bulkSearchBtn">7サイトを一括検索</button></div><p class="search-status" id="searchStatus">商品名を入力すると、7サイトの検索先を一度に準備します。</p><div class="site-results hide" id="siteResults"></div></div>
+    <div class="card"><h2>7サイト一括検索</h2><label>ブランド・商品名</label><input id="searchQ" placeholder="例: Cartier リング" enterkeyhint="search" /><div class="actions" style="margin-top:12px"><button class="btn primary full" id="bulkSearchBtn">実商品を一括検索・判定</button></div><p class="search-status" id="searchStatus">Safari拡張機能を使って実商品を収集します。</p><div class="site-results hide" id="candidateResults"></div><div class="site-results hide" id="siteResults"></div></div>
     <div class="notice">自動ログイン・質問送信・購入は外部サイトの規約と認証に従います。質問/返信送信と購入確定は人の同意を必須とする運用です。</div>
   </section>
 

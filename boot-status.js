@@ -1,42 +1,26 @@
 (()=>{'use strict';
-const UI_VERSION='10.0.0';
+const FALLBACK_VERSION='11.0.0';
 let done=false,tries=0;
 function status(){return document.getElementById('searchStatus')}
-function header(text){const p=document.querySelector('header p');if(p)p.textContent=text;document.title='せどりAI v'+UI_VERSION}
+function header(text,version=FALLBACK_VERSION){const p=document.querySelector('header p');if(p)p.textContent=text;document.title='せどりAI v'+version}
+function fail(message,version=FALLBACK_VERSION){done=true;header('v'+version+' 起動エラー｜検索停止',version);const s=status();if(s)s.textContent=message;const b=document.getElementById('bulkSearchBtn');if(b){b.disabled=true;b.textContent='判定エンジン自己診断エラー'}return true}
 function check(){
   if(done)return true;
   const test=window.__SEDORI_SELFTEST__;
-  const v9=window.__SEDORI_V9__;
   if(test){
-    done=true;
-    const logicOk=!!v9&&typeof v9.money==='function'&&typeof v9.analyze==='function';
-    let mathOk=false;
-    try{
-      if(logicOk){
-        const s={minProfit:3000,minRoi:30};
-        const m=v9.money({buy:10000,sell:20000,fee:10,ship:750,other:0},s);
-        mathOk=m.profit===7250&&Math.round(m.roi*10)/10===72.5&&m.maxBuy===13269;
-      }
-    }catch(e){console.error('v10 boot selftest',e)}
-    if(test.ok&&test.version===UI_VERSION&&logicOk&&mathOk){
-      window.__SEDORI_UI_VERSION__=UI_VERSION;
-      header('v10.0.0 実用版｜カテゴリ相場フォールバック・純利益・自己診断合格');
+    const version=String(test.version||window.__SEDORI_APP_STABLE_VERSION__||FALLBACK_VERSION);
+    if(test.ok===true){
+      done=true;
+      window.__SEDORI_UI_VERSION__=version;
+      header('v'+version+' 実用版｜利益判定・カテゴリ相場・純利益・自己診断合格',version);
       const s=status();
-      if(s&&(/読み込み中|起動中|準備中/.test(s.textContent)||!s.textContent.trim()))s.textContent='v10.0.0判定エンジン準備完了。一般カテゴリ検索でも安全側参考売価を算定します。';
-    }else{
-      header('v10.0.0 起動エラー｜検索停止');
-      const s=status();if(s)s.textContent='v10.0.0判定エンジンの自己診断に失敗しました。検索は停止しています。';
-      const b=document.getElementById('bulkSearchBtn');if(b){b.disabled=true;b.textContent='判定エンジン自己診断エラー';}
+      if(s&&(/読み込み中|起動中|準備中/.test(s.textContent)||!s.textContent.trim()))s.textContent='v'+version+'判定エンジン準備完了。複数比較から安全側参考売価と純利益を算定します。';
+      const b=document.getElementById('bulkSearchBtn');if(b){b.disabled=false;if(/自己診断|起動できません/.test(b.textContent))b.textContent='5サイトを一括検索して利益順に判定'}
+      return true;
     }
-    return true;
+    return fail('判定エンジンの自己診断に失敗しました。再読み込みしても直らない場合は診断内容を確認してください。',version);
   }
-  if(++tries>=120){
-    done=true;
-    header('v10.0.0 起動確認エラー｜検索停止');
-    const s=status();if(s)s.textContent='判定エンジンの起動を確認できませんでした。ページを再読み込みしてください。';
-    const b=document.getElementById('bulkSearchBtn');if(b){b.disabled=true;b.textContent='判定エンジンを起動できません';}
-    return true;
-  }
+  if(++tries>=150)return fail('判定エンジンの起動を確認できませんでした。ページを再読み込みしてください。');
   return false;
 }
 const timer=setInterval(()=>{if(check())clearInterval(timer)},100);

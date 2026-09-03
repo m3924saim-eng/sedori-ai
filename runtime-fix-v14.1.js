@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='14.1.0';
+const VERSION='14.2.0';
 const $=id=>document.getElementById(id);
 function filters(){return{query:$('searchQ')?.value.trim()||'',min:+($('searchMin')?.value||0),max:+($('searchMax')?.value||0),condition:$('searchCondition')?.value||'all',sort:$('searchSort')?.value||'newest',onSale:$('searchOnSale')?.checked!==false,excludeAds:$('searchExcludeAds')?.checked!==false,maxPerSite:50}}
 function start(e){
@@ -11,10 +11,10 @@ function start(e){
   window.postMessage({type:'SEDORI_START_SEARCH',filters:f,runtimeVersion:VERSION},location.origin);
 }
 function install(){
-  const b=$('bulkSearchBtn');if(b&&!b.dataset.sedori141){b.dataset.sedori141='1';b.addEventListener('click',start,true)}
-  const q=$('searchQ');if(q&&!q.dataset.sedori141){q.dataset.sedori141='1';q.addEventListener('keydown',e=>{if(e.key==='Enter')start(e)},true)}
-  const a=document.querySelector('a[href^="sedori-ai.user.js"]');if(a){a.href='sedori-ai.user.js?v=420';a.textContent='v4.2.0 を開く'}
-  const hp=document.querySelector('header p');if(hp)hp.textContent=`v${VERSION} 同一商品ゲート版｜自己診断合格｜検索・ログイン修正`;
+  const b=$('bulkSearchBtn');if(b&&!b.dataset.sedori142){b.dataset.sedori142='1';b.addEventListener('click',start,true)}
+  const q=$('searchQ');if(q&&!q.dataset.sedori142){q.dataset.sedori142='1';q.addEventListener('keydown',e=>{if(e.key==='Enter')start(e)},true)}
+  const a=document.querySelector('a[href^="sedori-ai.user.js"]');if(a){a.href='sedori-ai.user.js?v=430';a.textContent='v4.3.0 を開く'}
+  const hp=document.querySelector('header p');if(hp)hp.textContent=`v${VERSION} 同一商品ゲート版｜検索・ログイン同期修正`;
   document.title=`せどりAI v${VERSION}`;
   window.__SEDORI_RUNTIME_FIX__={version:VERSION,installedAt:new Date().toISOString()};
 }

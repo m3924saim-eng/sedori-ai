@@ -1,14 +1,14 @@
-name: Test sedori AI v9
+name: Test sedori AI v13
 
 on:
   push:
     paths:
-      - 'app-v8.3-logic.js'
-      - 'app-v8-core.js'
+      - 'app.js'
       - 'boot-status.js'
       - 'index.html'
       - 'sw.js'
-      - 'test-v9.js'
+      - 'sedori-ai.user.js'
+      - 'test-v13.js'
       - '.github/workflows/test-v9.yml'
   workflow_dispatch:
 
@@ -25,33 +25,33 @@ jobs:
           node-version: '22'
       - name: JavaScript syntax checks
         run: |
-          node --check app-v8-core.js
-          node --check app-v8.3-logic.js
           node --check app.js
           node --check boot-status.js
           node --check sedori-ai.user.js
           node --check sw.js
-      - name: v9 regression tests
-        run: node test-v9.js
-      - name: v9 asset/version consistency
+          node --check test-v13.js
+      - name: v13 regression tests
+        run: node test-v13.js
+      - name: v13 asset/version consistency
         run: |
           python - <<'PY'
           from pathlib import Path
           index=Path('index.html').read_text(encoding='utf-8')
           sw=Path('sw.js').read_text(encoding='utf-8')
           boot=Path('boot-status.js').read_text(encoding='utf-8')
-          logic=Path('app-v8.3-logic.js').read_text(encoding='utf-8')
+          app=Path('app.js').read_text(encoding='utf-8')
           checks={
-            'index title': '<title>せどりAI v9.0.0</title>' in index,
-            'index v9 logic cache key': 'app-v8.3-logic.js?v=9000' in index,
-            'index v9 boot cache key': 'boot-status.js?v=9000' in index,
-            'logic version': "const VERSION='9.0.0';" in logic,
-            'boot version': "const UI_VERSION='9.0.0';" in boot,
-            'service worker v9 logic': './app-v8.3-logic.js?v=9000' in sw,
-            'service worker v9 boot': './boot-status.js?v=9000' in sw,
+            'index title': '<title>せどりAI v13.0.0</title>' in index,
+            'index app cache key': 'app.js?v=13000' in index,
+            'index boot cache key': 'boot-status.js?v=13000' in index,
+            'app version': "const VERSION='13.0.0';" in app,
+            'boot version': "const VERSION='13.0.0';" in boot,
+            'selftest bridge': '__SEDORI_SELFTEST__' in app and '__SEDORI_SELFTEST__' in boot,
+            'service worker cache': "const CACHE='sedori-ai-v13000';" in sw,
+            'service worker app': './app.js?v=13000' in sw,
           }
           failed=[k for k,v in checks.items() if not v]
           if failed:
               raise SystemExit('consistency checks failed: '+', '.join(failed))
-          print('v9 consistency checks passed')
+          print('v13 consistency checks passed')
           PY

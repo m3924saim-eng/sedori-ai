@@ -9,6 +9,7 @@ on:
       - 'index.html'
       - 'sw.js'
       - 'sedori-ai.user.js'
+      - 'sedori-ai.meta.js'
       - 'test-v13.js'
       - '.github/workflows/test-v9.yml'
   workflow_dispatch:
@@ -30,6 +31,7 @@ jobs:
           node --check boot-status.js
           node --check runtime-fix-v14.1.js
           node --check sedori-ai.user.js
+          node --check sedori-ai.meta.js
           node --check sw.js
           node --check test-v13.js
       - name: v14 regression tests
@@ -43,6 +45,7 @@ jobs:
           app=Path('app.js').read_text(encoding='utf-8')
           hotfix=Path('runtime-fix-v14.1.js').read_text(encoding='utf-8')
           userscript=Path('sedori-ai.user.js').read_text(encoding='utf-8')
+          meta=Path('sedori-ai.meta.js').read_text(encoding='utf-8')
           index=Path('index.html').read_text(encoding='utf-8')
           checks={
             'base engine version': "const VERSION='14.0.0';" in app,
@@ -50,23 +53,32 @@ jobs:
             'runtime module version': "const VERSION='14.3.0';" in hotfix,
             'selftest bridge': '__SEDORI_SELFTEST__' in app and '__SEDORI_SELFTEST__' in boot,
             'hotfix loader': 'runtime-fix-v14.1.js?v=14300' in boot,
-            'index loads runtime': 'runtime-fix-v14.1.js' in index,
+            'index version': '<title>せどりAI v14.3.0</title>' in index,
+            'index boot cache bust': 'boot-status.js?v=14300' in index,
+            'index runtime cache bust': 'runtime-fix-v14.1.js?v=14300' in index,
+            'index userscript stable link': 'href="sedori-ai.user.js"' in index and 'v4.5.0 を開く' in index,
             'service worker cache': "const CACHE='sedori-ai-v14300';" in sw,
             'service worker hotfix': './runtime-fix-v14.1.js?v=14300' in sw,
             'service worker userscript': './sedori-ai.user.js' in sw,
-            'userscript version': '// @version      4.4.0' in userscript,
+            'userscript stable name': '// @name         せどりAI 5サイト連携' in userscript,
+            'userscript version': '// @version      4.5.0' in userscript,
+            'meta stable name': '// @name         せどりAI 5サイト連携' in meta,
+            'meta version': '// @version      4.5.0' in meta,
             'content injection': '// @inject-into  content' in userscript,
+            'priority weight': '// @weight       999' in userscript,
             'minimal GM grants': '// @grant        GM.getValue' in userscript and '// @grant        GM.setValue' in userscript and '// @grant        GM.deleteValue' in userscript,
             'no tab bridge dependency': 'GM.getTab' not in userscript and 'GM.saveTab' not in userscript,
             'dom command bridge runtime': 'sedoriBridgeCommand' in hotfix,
             'dom command bridge userscript': 'sedoriBridgeCommand' in userscript,
             'dom result bridge': 'sedoriBridgeResult' in hotfix and 'sedoriBridgeResult' in userscript,
             'connected marker': 'sedoriUserscript' in hotfix and 'sedoriUserscript' in userscript,
-            'login report': 'sedori_login_report_v44' in userscript,
-            'search job': 'sedori_search_job_v44' in userscript,
+            'legacy cleanup': 'LEGACY_KEYS' in userscript and 'sedori_login_job_v43' in userscript,
+            'login report': 'sedori_login_report_v45' in userscript,
+            'search job': 'sedori_search_job_v45' in userscript,
+            'stable update url': 'sedori-ai.meta.js' in userscript and 'sedori-ai.user.js' in userscript,
           }
           failed=[k for k,v in checks.items() if not v]
           if failed:
               raise SystemExit('consistency checks failed: '+', '.join(failed))
-          print('v14.3 consistency checks passed')
+          print('v14.3 / userscript v4.5 consistency checks passed')
           PY

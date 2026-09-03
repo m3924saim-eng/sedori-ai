@@ -1,21 +1,50 @@
 (()=>{'use strict';
 const CORE='./app-v8-core.js?v=82';
+const LOGIN_URLS={
+  mercari:'https://jp.mercari.com/',
+  rakuma:'https://fril.jp/',
+  yahoo_fleamarket:'https://paypayfleamarket.yahoo.co.jp/',
+  yahoo_auction:'https://auctions.yahoo.co.jp/',
+  jmty:'https://jmty.jp/users/sign_in'
+};
+const LOGIN_IDS=['mercari','rakuma','yahoo_fleamarket','yahoo_auction','jmty'];
 
 function replaceFn(src,name,nextName,replacement){
   const start=src.indexOf(`function ${name}(`);
   if(start<0)throw new Error(`v8.2 patch: ${name} not found`);
   const end=src.indexOf(`function ${nextName}(`,start+1);
   if(end<0)throw new Error(`v8.2 patch: ${nextName} boundary not found`);
-  const indent=src.slice(src.lastIndexOf('\n',start)+1,start);
   return src.slice(0,start)+replacement.trim()+`\n  `+src.slice(end);
+}
+
+function enhanceLoginRows(status={}){
+  const rows=[...document.querySelectorAll('#loginResults .login-row')];
+  rows.forEach((row,i)=>{
+    const id=LOGIN_IDS[i];
+    if(!id)return;
+    row.querySelector('[data-login-link]')?.remove();
+    if(status[id]!=='out')return;
+    const a=document.createElement('a');
+    a.className='btn';
+    a.dataset.loginLink='1';
+    a.href=LOGIN_URLS[id];
+    a.target='_blank';
+    a.rel='noopener';
+    a.textContent='ログインへ';
+    a.style.marginLeft='8px';
+    a.style.padding='6px 10px';
+    a.style.fontSize='12px';
+    a.style.whiteSpace='nowrap';
+    row.appendChild(a);
+  });
 }
 
 async function boot(){
   try{
     let s=await fetch(CORE,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error('core '+r.status);return r.text()});
 
-    s=s.replace("const VERSION='8.0.0';","const VERSION='8.2.0';");
-    if(!s.includes("const VERSION='8.2.0';"))throw new Error('v8.2 version patch failed');
+    s=s.replace("const VERSION='8.0.0';","const VERSION='8.2.1';");
+    if(!s.includes("const VERSION='8.2.1';"))throw new Error('v8.2 version patch failed');
 
     s=s.replace(
       "return uniq(raw.map(x=>x.replace(/[ -]/g,''))).slice(0,8)",
@@ -198,9 +227,15 @@ function opportunity(item,m,settings=DEFAULTS){
     s=s.replace("｜モード ${m.mode}<br>同等品：","｜売価根拠 A ${m.aCount}件/${m.priceSourceCount||0}サイト｜モード ${m.mode}<br>同等品：");
     s=s.replace("根拠を見る（同等品 ${m.compCount}件）","根拠を見る（比較 ${m.compCount}件／A一致 ${m.aCount}件）");
     s=s.replace("※販売中表示価格ベースであり成約価格ではありません。売価は下位価格帯へ安全補正しています。","※販売中表示価格ベースであり成約価格ではありません。v8.2ではA一致2件未満は売価・利益・ROIを算定しません。B/C一致は参考表示のみです。");
-    s=s.replace("v8.0 実用版｜検索条件保持・同等品階層化・下振れ耐性・相場乖離検知","v8.2 本命版｜A一致売価のみ・誤利益遮断・保守買付上限・相場乖離検知");
+    s=s.replace("v8.0 実用版｜検索条件保持・同等品階層化・下振れ耐性・相場乖離検知","v8.2.1 本命版｜A一致売価のみ・誤利益遮断・未ログインサイトへワンタップ移動");
 
     (0,eval)(s);
+
+    window.addEventListener('message',e=>{
+      if(e.source!==window||e.data?.type!=='SEDORI_LOGIN_STATUS')return;
+      queueMicrotask(()=>enhanceLoginRows(e.data.status||{}));
+    });
+
     const A=window.__SEDORI_V8__;
     const mk=(source,title,price,id)=>({source,title,price,url:`https://selftest.invalid/${id}`,rawText:title});
     const t=mk('mercari','Cartier ラブリング K18 11号',7000,'t');

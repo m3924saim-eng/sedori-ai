@@ -1,0 +1,52 @@
+name: One-time v14 consistency fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/v14-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch v14 files
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          index = Path('index.html')
+          s = index.read_text(encoding='utf-8')
+          s = s.replace('v13.0.0', 'v14.0.0').replace('v=13000', 'v=14000')
+          index.write_text(s, encoding='utf-8')
+
+          app = Path('app.js')
+          s = app.read_text(encoding='utf-8')
+          old = """  const q=identity(f.query);\n  if(querySpecificity(q)<2){\n    status('検索語が広すぎます。ブランド・型番・素材・サイズなどを1つ以上追加してください。');\n    return;\n  }\n\n"""
+          if old in s:
+              s = s.replace(old, '')
+          else:
+              s = re.sub(r"\n\s*const q=identity\(f\.query\);\n\s*if\(querySpecificity\(q\)<2\)\{.*?\n\s*\}\n", "\n", s, flags=re.S)
+          app.write_text(s, encoding='utf-8')
+          PY
+      - name: Validate
+        run: |
+          node --check app.js
+          node test-v13.js
+          grep -q "v14.0.0" index.html
+          grep -q "app.js?v=14000" index.html
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js index.html
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+          else
+            git commit -m "Fix v14 search activation and cache keys"
+            git push
+          fi

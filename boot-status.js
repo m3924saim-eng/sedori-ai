@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const UI_VERSION='14.4.1',HOTFIX='runtime-fix-v14.1.js?v=14401';
+const UI_VERSION='14.4.2',HOTFIX='runtime-fix-v14.1.js?v=14402';
 function status(){return document.getElementById('searchStatus')}
 function header(text){const p=document.querySelector('header p');if(p)p.textContent=text;document.title='せどりAI v'+UI_VERSION}
 function enable(){for(const id of['bulkSearchBtn','checkLoginBtn','judgeBtn','saveBtn','saveSettingsBtn','resetSettingsBtn','exportBtn','clearBtn','copyQuestionBtn']){const b=document.getElementById(id);if(b){b.disabled=false;b.removeAttribute('disabled')}}}

@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='14.4.0';
+const VERSION='14.4.2';
 const REQUIRED_SCRIPT='4.5.0';
 const $=id=>document.getElementById(id);
 const filters=()=>({query:$('searchQ')?.value.trim()||'',min:+($('searchMin')?.value||0),max:+($('searchMax')?.value||0),condition:$('searchCondition')?.value||'all',sort:$('searchSort')?.value||'newest',onSale:$('searchOnSale')?.checked!==false,excludeAds:$('searchExcludeAds')?.checked!==false,maxPerSite:50});

@@ -16,16 +16,17 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import re
           p=Path('index.html')
           s=p.read_text()
-          pat=r'<script src="app\.js\?v=14503"></script>\s*<script>if\(\'serviceWorker\' in navigator\).*?</script>'
+          marker='<script src="app.js?v=14503"></script>'
+          i=s.find(marker)
+          if i<0: raise SystemExit('app marker not found')
+          j=s.find('</script>', i+len(marker))
+          if j<0: raise SystemExit('service worker script end not found')
           new='<script src="boot-guard.js?v=14504"></script>\n<script src="app.js?v=14504"></script>'
-          s2,n=re.subn(pat,new,s,count=1,flags=re.S)
-          if n!=1:
-              raise SystemExit(f'script block replacements={n}')
-          s2=s2.replace('✓ v14.5.3 修正済み','✓ v14.5.3 / build 14504 起動保護',1)
-          p.write_text(s2)
+          s=s[:i]+new+s[j+9:]
+          s=s.replace('✓ v14.5.3 修正済み','✓ v14.5.3 / build 14504 起動保護',1)
+          p.write_text(s)
           PY
       - name: Syntax tests
         run: |

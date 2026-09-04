@@ -1,6 +1,6 @@
-const CACHE='sedori-ai-v14501';
+const CACHE='sedori-ai-v14503';
 const PREFIX='sedori-ai-v';
-const ASSETS=['./','./index.html','./app.js?v=14501','./runtime-fix-v14.1.js?v=14501','./sedori-ai.user.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
+const ASSETS=['./','./index.html','./app.js?v=14503','./runtime-fix-v14.1.js?v=14503','./sedori-ai.user.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{

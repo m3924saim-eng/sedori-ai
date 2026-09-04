@@ -1,4 +1,4 @@
-name: One-time v14.4 Safari consistency fix
+name: One-time v14.4.3 blank-screen fix
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Patch v14.4.2 files
+      - name: Patch v14.4.3 cache-busted entrypoint
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -27,30 +27,18 @@ jobs:
               p.write_text(s, encoding='utf-8')
 
           replace('index.html', [
-              ('v14.3.0', 'v14.4.2'),
-              ('app.js?v=14000', 'app.js?v=14402'),
-              ('boot-status.js?v=14300', 'boot-status.js?v=14402'),
-              ('runtime-fix-v14.1.js?v=14300', 'runtime-fix-v14.1.js?v=14402'),
-              ('./sw.js?v=14300', './sw.js?v=14402'),
-          ])
-
-          replace('boot-status.js', [
-              ("UI_VERSION='14.4.1'", "UI_VERSION='14.4.2'"),
-              ("runtime-fix-v14.1.js?v=14401", "runtime-fix-v14.1.js?v=14402"),
-          ])
-
-          replace('runtime-fix-v14.1.js', [
-              ("const VERSION='14.4.0';", "const VERSION='14.4.2';"),
+              ('v14.4.2', 'v14.4.3'),
+              ('?v=14402', '?v=14403'),
           ])
 
           replace('reset.html', [
-              ('fresh=14401', 'fresh=14402'),
+              ('fresh=14402', 'fresh=14403'),
           ])
 
           sw = [
-              "const CACHE='sedori-ai-v14402';",
+              "const CACHE='sedori-ai-v14403';",
               "const PREFIX='sedori-ai-v';",
-              "const ASSETS=['./','./index.html','./app.js?v=14402','./boot-status.js?v=14402','./runtime-fix-v14.1.js?v=14402','./sedori-ai.user.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];",
+              "const ASSETS=['./','./index.html','./app.js?v=14403','./boot-status.js?v=14403','./runtime-fix-v14.1.js?v=14403','./sedori-ai.user.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];",
               "",
               "self.addEventListener('install',event=>{",
               "  event.waitUntil((async()=>{",
@@ -92,28 +80,41 @@ jobs:
           Path('sw.js').write_text('\n'.join(sw) + '\n', encoding='utf-8')
           PY
 
-      - name: Validate
+      - name: Validate runtime and regression guards
         run: |
           node --check app.js
           node --check boot-status.js
           node --check runtime-fix-v14.1.js
           node --check sw.js
           node test-v13.js
-          grep -q "v14.4.2" index.html
-          grep -q "app.js?v=14402" index.html
-          grep -q "boot-status.js?v=14402" index.html
-          grep -q "runtime-fix-v14.1.js?v=14402" index.html
-          grep -q "sw.js?v=14402" index.html
-          grep -q "sedori-ai-v14402" sw.js
+          python - <<'PY'
+          from pathlib import Path
+          idx = Path('index.html').read_text(encoding='utf-8')
+          rt = Path('runtime-fix-v14.1.js').read_text(encoding='utf-8')
+          boot = Path('boot-status.js').read_text(encoding='utf-8')
+          sw = Path('sw.js').read_text(encoding='utf-8')
+          assert 'v14.4.3' in idx
+          assert 'app.js?v=14403' in idx
+          assert 'boot-status.js?v=14403' in idx
+          assert 'runtime-fix-v14.1.js?v=14403' in idx
+          assert 'sw.js?v=14403' in idx
+          assert "__SEDORI_RUNTIME_FIX_ACTIVE__" in rt
+          assert 'MutationObserver' not in rt
+          assert "replace(/Panel$/,'')" in rt
+          assert "UI_VERSION='14.4.3'" in boot
+          assert "runtime-fix-v14.1.js?v=14403" in boot
+          assert "sedori-ai-v14403" in sw
+          print('v14.4.3 regression checks: PASS')
+          PY
 
       - name: Commit fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html boot-status.js runtime-fix-v14.1.js reset.html sw.js
+          git add index.html reset.html sw.js
           if git diff --cached --quiet; then
             echo "No changes needed"
           else
-            git commit -m "Fix Safari stale cache and v14.4 boot consistency"
+            git commit -m "Publish v14.4.3 blank-screen fix"
             git push
           fi

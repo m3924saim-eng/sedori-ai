@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='14.5.9',TIMEOUT_MS=65000,KEY='sedori_settings_v1459';
+const VERSION='14.5.10',TIMEOUT_MS=65000,KEY='sedori_settings_v14510';
 const $=id=>document.getElementById(id),yen=n=>'¥'+Math.round(Number(n)||0).toLocaleString('ja-JP'),pct=n=>(Math.round((Number(n)||0)*10)/10)+'%';
 const SITES={mercari:'メルカリ',rakuma:'楽天ラクマ',yahoo_fleamarket:'Yahoo!フリマ',yahoo_auction:'Yahoo!オークション',jmty:'ジモティー'};
 let timer=0,last=[],lastResultAt=0;

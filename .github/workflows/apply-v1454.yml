@@ -1,0 +1,89 @@
+name: Apply v14.5.4 dead UI hotfix
+on:
+  push:
+    branches: [fix/v14.5.4-dead-ui]
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: contains(github.event.head_commit.message, '[apply-v1454]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index and strengthen tests
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='<script src="app.js?v=14503"></script>\n<script>if(\'serviceWorker\' in navigator){window.addEventListener(\'load\',()=>navigator.serviceWorker.register(\'./sw.js?v=14503\',{updateViaCache:\'none\'}).catch(()=>{}));}</script>'
+          new='<script src="boot-guard.js?v=14504"></script>\n<script src="app.js?v=14504"></script>'
+          if old not in s:
+              raise SystemExit('old script block not found')
+          s=s.replace(old,new,1)
+          s=s.replace('✓ v14.5.3 修正済み','✓ v14.5.3 / build 14504 起動保護',1)
+          p.write_text(s)
+
+          p=Path('test-ui-smoke.mjs')
+          p.write_text(r'''import fs from 'node:fs';
+import {JSDOM} from 'jsdom';
+
+const sourceHtml=fs.readFileSync('index.html','utf8');
+const html=sourceHtml.replace(/<script src="(?:boot-guard|app)\.js[^>]*><\/script>/g,'');
+const app=fs.readFileSync('app.js','utf8');
+const guard=fs.readFileSync('boot-guard.js','utf8');
+function ok(cond,msg){if(!cond) throw new Error(msg)}
+
+// Normal app boot and real button bindings.
+{
+  const dom=new JSDOM(html,{url:'https://m3924saim-eng.github.io/sedori-ai/',runScripts:'outside-only',pretendToBeVisual:true});
+  const {window}=dom; window.console=console; window.eval(app); await new Promise(r=>setTimeout(r,30));
+  const d=window.document;
+  ok(window.__SEDORI_ENGINE__,'engine did not boot');
+  ok(d.getElementById('searchStatus').textContent.includes('商品名・型番'),'init status not set');
+  const nav=[...d.querySelectorAll('nav button')]; ok(nav.length===4,'nav count');
+  nav.find(b=>b.dataset.tab==='settings').click(); ok(!d.getElementById('settingsPanel').classList.contains('hide'),'settings tab dead');
+  nav.find(b=>b.dataset.tab==='search').click(); ok(!d.getElementById('searchPanel').classList.contains('hide'),'search tab dead');
+  d.getElementById('searchQ').value='Nintendo Switch 有機EL';
+  d.getElementById('bulkSearchBtn').click(); ok(d.getElementById('searchStatus').textContent.includes('未接続'),'search disconnected path dead');
+  d.documentElement.dataset.sedoriUserscript='4.5.0';
+  d.getElementById('bulkSearchBtn').click();
+  const cmd=d.getElementById('sedoriBridgeCommand'); ok(cmd,'bridge command missing'); ok(JSON.parse(cmd.textContent).type==='search','wrong command');
+  window.close();
+}
+
+// Fail-safe: even when app.js is absent/broken, UI must not be totally dead.
+{
+  const dom=new JSDOM(html,{url:'https://m3924saim-eng.github.io/sedori-ai/',runScripts:'outside-only',pretendToBeVisual:true});
+  const {window}=dom; window.console=console;
+  Object.defineProperty(window.navigator,'serviceWorker',{value:{getRegistrations:async()=>[]},configurable:true});
+  window.eval(guard); await new Promise(r=>setTimeout(r,30));
+  const d=window.document;
+  const settings=[...d.querySelectorAll('nav button')].find(b=>b.dataset.tab==='settings'); settings.click();
+  ok(!d.getElementById('settingsPanel').classList.contains('hide'),'guard tab fallback dead');
+  d.getElementById('bulkSearchBtn').click();
+  ok(d.getElementById('searchStatus').textContent.includes('起動エラー'),'guard search fallback dead');
+  window.close();
+}
+
+ok(sourceHtml.includes('boot-guard.js?v=14504'),'guard not loaded by index');
+ok(!sourceHtml.includes('serviceWorker.register'),'old service worker registration still active');
+console.log('UI smoke OK: normal boot + dead-app fallback');
+''')
+          PY
+      - name: Pre-commit tests
+        run: |
+          node --check app.js
+          node --check boot-guard.js
+          node --check sedori-ai.user.js
+          npm install --no-save jsdom@26
+          node test-ui-smoke.mjs
+      - name: Commit tested hotfix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html test-ui-smoke.mjs
+          git commit -m "fix: tested dead UI recovery build 14504"
+          git push

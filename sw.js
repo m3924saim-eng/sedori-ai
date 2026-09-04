@@ -1,6 +1,6 @@
-const CACHE='sedori-ai-v14404';
+const CACHE='sedori-ai-v14501';
 const PREFIX='sedori-ai-v';
-const ASSETS=['./','./index.html','./app.js?v=14404','./boot-status.js?v=14404','./runtime-fix-v14.1.js?v=14404','./sedori-ai.user.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
+const ASSETS=['./','./index.html','./app.js?v=14501','./runtime-fix-v14.1.js?v=14501','./sedori-ai.user.js','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-180.png'];
 
 self.addEventListener('install',event=>{
   event.waitUntil((async()=>{
@@ -32,9 +32,7 @@ self.addEventListener('fetch',event=>{
       if(response.ok) return response;
       if(req.mode!=='navigate') return response;
     }catch(_){ }
-    if(req.mode==='navigate'){
-      return (await caches.match('./index.html',{ignoreSearch:true})) || Response.error();
-    }
+    if(req.mode==='navigate') return (await caches.match('./index.html',{ignoreSearch:true})) || Response.error();
     return (await caches.match(req,{ignoreSearch:true})) || Response.error();
   })());
 });

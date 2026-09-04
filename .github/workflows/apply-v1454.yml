@@ -16,17 +16,16 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
           p=Path('index.html')
           s=p.read_text()
-          old='''<script src="app.js?v=14503"></script>
-          <script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js?v=14503',{updateViaCache:'none'}).catch(()=>{}));}</script>'''.replace('          ','')
-          new='''<script src="boot-guard.js?v=14504"></script>
-          <script src="app.js?v=14504"></script>'''.replace('          ','')
-          if old not in s:
-              raise SystemExit('old script block not found')
-          s=s.replace(old,new,1)
-          s=s.replace('✓ v14.5.3 修正済み','✓ v14.5.3 / build 14504 起動保護',1)
-          p.write_text(s)
+          pat=r'<script src="app\.js\?v=14503"></script>\s*<script>if\(\'serviceWorker\' in navigator\).*?</script>'
+          new='<script src="boot-guard.js?v=14504"></script>\n<script src="app.js?v=14504"></script>'
+          s2,n=re.subn(pat,new,s,count=1,flags=re.S)
+          if n!=1:
+              raise SystemExit(f'script block replacements={n}')
+          s2=s2.replace('✓ v14.5.3 修正済み','✓ v14.5.3 / build 14504 起動保護',1)
+          p.write_text(s2)
           PY
       - name: Syntax tests
         run: |

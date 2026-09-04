@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         せどりAI 5サイト連携
 // @namespace    https://m3924saim-eng.github.io/
-// @version      4.5.0
-// @description  iPhone/iPad Safari Userscripts向け。DOMブリッジ＋GM保存で5サイト検索とログイン確認を安定化し、旧版の競合ジョブを無効化。
+// @version      4.5.1
+// @description  iPhone/iPad Safari Userscripts向け。5サイト検索のDOM取得を強化し、遅延読込・件数集計・0件診断を改善。
 // @match        https://m3924saim-eng.github.io/*
 // @match        https://jp.mercari.com/*
 // @match        https://fril.jp/*

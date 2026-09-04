@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='14.5.3',TIMEOUT_MS=55000,KEY='sedori_settings_v145';
+const VERSION='14.5.4',TIMEOUT_MS=55000,KEY='sedori_settings_v145';
 const $=id=>document.getElementById(id),yen=n=>'¥'+Math.round(Number(n)||0).toLocaleString('ja-JP'),pct=n=>(Math.round((Number(n)||0)*10)/10)+'%';
 const SITES={mercari:'メルカリ',rakuma:'楽天ラクマ',yahoo_fleamarket:'Yahoo!フリマ',yahoo_auction:'Yahoo!オークション',jmty:'ジモティー'};
 let timer=0,last=[],lastResultAt=0;
@@ -9,7 +9,7 @@ function load(){const s=settings();if($('minProfit'))$('minProfit').value=s.minP
 function status(t,err=false){if($('searchStatus')){$('searchStatus').textContent=t;$('searchStatus').className='status'+(err?' error':'')}}
 function filters(){return{query:$('searchQ')?.value.trim()||'',min:+($('searchMin')?.value||0),max:+($('searchMax')?.value||0),condition:$('searchCondition')?.value||'all',sort:$('searchSort')?.value||'newest',onSale:$('searchOnSale')?.checked!==false,excludeAds:$('searchExcludeAds')?.checked!==false,maxPerSite:50}}
 function command(type,payload={}){document.getElementById('sedoriBridgeCommand')?.remove();const n=document.createElement('div');n.id='sedoriBridgeCommand';n.hidden=true;n.textContent=JSON.stringify({type,...payload,at:Date.now(),appVersion:VERSION});document.documentElement.appendChild(n)}
-function connected(){const v=document.documentElement.dataset.sedoriUserscript||'';if($('bridgeChip'))$('bridgeChip').textContent=v?`● Userscripts v${v} 接続済み`:'● Userscripts 未接続';return !!v}
+function connected(){const v=document.documentElement.dataset.sedoriUserscript||'',chip=$('bridgeChip'),label=v?`● Userscripts v${v} 接続済み`:'● Userscripts 未接続';if(chip&&chip.textContent!==label)chip.textContent=label;return !!v}
 function qtokens(t){return String(t||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(/\s+/).filter(x=>x.length>1)}
 function identityScore(a,b){const A=qtokens(a),B=qtokens(b);if(!A.length||!B.length)return 0;const hit=A.filter(x=>B.some(y=>x===y||x.includes(y)||y.includes(x))).length;let score=Math.round(hit/A.length*100);const hard=[/iphone\s*\d+/i,/switch\s*(?:oled|lite)?/i,/\bk(?:10|14|18|24)\b/i,/\bpt(?:850|900|950)\b/i,/\b\d{2,3}\s*gb\b/i,/\b\d{1,2}\s*号\b/i];for(const r of hard){const aa=String(a).match(r)?.[0]?.toLowerCase(),bb=String(b).match(r)?.[0]?.toLowerCase();if(aa&&bb&&aa!==bb)score-=35}return Math.max(0,Math.min(100,score))}
 function isAuction(i){return i.source==='yahoo_auction'||/オークション|入札|残り\d|終了まで|1円スタート/i.test(i.rawText||'')}

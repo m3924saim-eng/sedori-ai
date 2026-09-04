@@ -1,0 +1,43 @@
+name: Apply v14.5.4 dead UI hotfix
+on:
+  push:
+    branches:
+      - 'fix/v14.5.4-dead-ui'
+permissions:
+  contents: write
+jobs:
+  apply:
+    if: ${{ contains(github.event.head_commit.message, '[apply-v1454]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch index
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          marker='<script src="app.js?v=14503"></script>'
+          i=s.find(marker)
+          if i<0: raise SystemExit('app marker not found')
+          j=s.find('</script>', i+len(marker))
+          if j<0: raise SystemExit('service worker script end not found')
+          new='<script src="boot-guard.js?v=14504"></script>\n<script src="app.js?v=14504"></script>'
+          s=s[:i]+new+s[j+9:]
+          s=s.replace('✓ v14.5.3 修正済み','✓ v14.5.3 / build 14504 起動保護',1)
+          p.write_text(s)
+          PY
+      - name: Syntax tests
+        run: |
+          node --check app.js
+          node --check boot-guard.js
+          node --check sedori-ai.user.js
+      - name: Commit hotfix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: dead UI recovery build 14504"
+          git push

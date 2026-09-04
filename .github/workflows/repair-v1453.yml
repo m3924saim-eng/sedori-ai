@@ -1,0 +1,51 @@
+name: Repair v14.5.3 search startup
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  repair:
+    if: contains(github.event.head_commit.message, '[repair-v1453]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix app syntax and cache versions
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app.js')
+          s=p.read_text()
+          old="last=clean.map(i=>judge(i,clean)).sort((a,b)=>({buy:0,watch:1,hold:2,pass:3}[a.verdict]-({buy:0,watch:1,hold:2,pass:3}[b.verdict])||b.profit-a.profit);"
+          new="last=clean.map(i=>judge(i,clean)).sort((a,b)=>(({buy:0,watch:1,hold:2,pass:3}[a.verdict]-{buy:0,watch:1,hold:2,pass:3}[b.verdict])||b.profit-a.profit));"
+          if old not in s:
+              raise SystemExit('target syntax line not found')
+          s=s.replace(old,new,1).replace("const VERSION='14.5.2'","const VERSION='14.5.3'",1)
+          p.write_text(s)
+
+          p=Path('index.html')
+          s=p.read_text().replace('v14.5.2','v14.5.3').replace('14502','14503')
+          s=s.replace('✓ v14.5.2 修正済み','✓ v14.5.3 起動バグ修正済み')
+          p.write_text(s)
+
+          p=Path('sw.js')
+          s=p.read_text().replace('14501','14503')
+          p.write_text(s)
+          PY
+      - name: Syntax test
+        run: node --check app.js && node --check sw.js
+      - name: Verify critical startup binding
+        shell: bash
+        run: |
+          grep -F "$('bulkSearchBtn').onclick=start" app.js
+          grep -F "function start()" app.js
+          grep -F "command('search'" app.js
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js index.html sw.js
+          git commit -m "fix: v14.5.3 search button startup syntax"
+          git push

@@ -1,14 +1,17 @@
 (()=>{'use strict';
-const BUILD='14508';
+const BUILD='14509';
 const $=id=>document.getElementById(id);
 function setStatus(text,error=false){const el=$('searchStatus');if(!el)return;el.textContent=text;el.className='status'+(error?' error':'')}
-function engineReady(){return !!(window.__SEDORI_ENGINE__||document.documentElement.dataset.sedoriEngine==='ready')}
+function appBound(){const b=$('bulkSearchBtn');return !!(b&&typeof b.onclick==='function')}
+function engineReady(){const ready=!!(window.__SEDORI_ENGINE__||document.documentElement.dataset.sedoriEngine==='ready'||appBound());if(ready){window.__SEDORI_ENGINE__=true;document.documentElement.dataset.sedoriEngine='ready'}return ready}
+function applyV1459Ui(){const ver=document.querySelector('.brand h1 small');if(ver)ver.textContent='v14.5.9';document.title='せどりAI v14.5.9';const good=document.querySelector('.box.good');if(good){const h=good.querySelector('h3');if(h)h.textContent='✓ v14.5.9 起動・価格判定修正'}const root=$('candidateResults');if(root){root.querySelectorAll('.row').forEach(row=>{const muted=[...row.querySelectorAll('.muted')];for(const el of muted){const t=(el.textContent||'').trim();if(t==='販売価格')el.textContent='仕入価格（出品価格）';else if(t==='安全売価')el.textContent='想定販売価格（相場）';else if(/^仕入価格\s*¥/.test(t))el.remove();}})}}
+function patchCommandVersion(){const n=$('sedoriBridgeCommand');if(!n)return;try{const x=JSON.parse(n.textContent||'{}');if(x.appVersion!=='14.5.9'){x.appVersion='14.5.9';n.textContent=JSON.stringify(x)}}catch{}}
 function fallbackTabs(){document.querySelectorAll('nav button').forEach(btn=>{btn.addEventListener('click',()=>{if(engineReady())return;const name=btn.dataset.tab;['search','judge','history','settings'].forEach(x=>$(x+'Panel')?.classList.toggle('hide',x!==name));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b===btn));});});}
 function fallbackButtons(){const search=$('bulkSearchBtn');search?.addEventListener('click',()=>{if(engineReady())return;setStatus('起動エラーを検出しました。app.jsを再読込しています…',true);retryApp();});}
 let retried=false;
-function retryApp(){if(engineReady()||retried)return;retried=true;const s=document.createElement('script');s.src=`./app.js?v=${BUILD}&retry=${Date.now()}`;s.onload=()=>setTimeout(checkBoot,150);s.onerror=()=>setStatus('app.js の再読込に失敗しました。Safariを再読み込みしてください。',true);document.head.appendChild(s)}
-function checkBoot(){if(engineReady()){document.documentElement.dataset.sedoriBoot='ok';return true}document.documentElement.dataset.sedoriBoot='failed';retryApp();setTimeout(()=>{if(!engineReady())setStatus('起動できませんでした。画面を再読み込みしてください。',true)},1800);return false}
+function retryApp(){if(engineReady()||retried)return;retried=true;const s=document.createElement('script');s.src=`./app.js?v=${BUILD}&retry=${Date.now()}`;s.onload=()=>setTimeout(checkBoot,200);s.onerror=()=>setStatus('app.js の再読込に失敗しました。Safariを再読み込みしてください。',true);document.head.appendChild(s)}
+function checkBoot(){if(engineReady()){document.documentElement.dataset.sedoriBoot='ok';const el=$('searchStatus');if(el&&/起動できません|起動エラー/.test(el.textContent||''))setStatus('準備完了');return true}document.documentElement.dataset.sedoriBoot='checking';retryApp();setTimeout(()=>{if(engineReady()){document.documentElement.dataset.sedoriBoot='ok';const el=$('searchStatus');if(el&&/起動できません|起動エラー/.test(el.textContent||''))setStatus('準備完了')}else{document.documentElement.dataset.sedoriBoot='failed';setStatus('起動できませんでした。画面を再読み込みしてください。',true)}},2400);return false}
 async function clearOldRuntime(){try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()))}}catch{}try{if('caches' in window){const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('sedori-ai-v')).map(k=>caches.delete(k)))}}catch{}}
-function init(){fallbackTabs();fallbackButtons();clearOldRuntime();setTimeout(checkBoot,1800)}
+function init(){fallbackTabs();fallbackButtons();clearOldRuntime();applyV1459Ui();const mo=new MutationObserver(()=>{applyV1459Ui();patchCommandVersion();if(engineReady())document.documentElement.dataset.sedoriBoot='ok'});mo.observe(document.documentElement,{childList:true,subtree:true});setInterval(()=>{applyV1459Ui();patchCommandVersion();engineReady()},800);setTimeout(checkBoot,2200)}
 document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init,{once:true}):init();
 })();

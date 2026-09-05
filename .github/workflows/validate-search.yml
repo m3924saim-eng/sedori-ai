@@ -22,7 +22,7 @@ jobs:
       - name: Critical search wiring
         shell: bash
         run: |
-          grep -F 'function start()' app.js
+          grep -F 'function start(' app.js
           grep -F 'bulkSearchBtn' app.js
           grep -F "cmd('search'" app.js
           grep -F 'sedoriBridgeCommand' sedori-ai.user.js

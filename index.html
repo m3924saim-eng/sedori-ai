@@ -3,64 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f2747">
+<meta name="theme-color" content="#102541">
 <meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>せどりAI v14.6.2 repair</title>
+<link rel="manifest" href="./manifest.webmanifest?v=1463">
+<title>せどりAI v14.6.3</title>
 <style>
-:root{--nav:#102541;--blue:#1473e6;--bg:#f4f7fb;--line:#dce4ee;--text:#142238;--muted:#68758a;--green:#078651;--orange:#e27817;--red:#d8332a}*{box-sizing:border-box}html,body{min-height:100%;background:var(--bg)}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text)}header{background:var(--nav);color:#fff;padding:14px 20px}.head{max-width:1320px;margin:auto;display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}.brand h1{margin:0;font-size:26px}.brand p{margin:2px 0 0;font-size:12px;color:#d7e1ee}.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{padding:8px 12px;border-radius:999px;background:#12375a;border:1px solid #1b4c76;color:#bff5d7;font-size:12px;font-weight:800}.wrap{max-width:1320px;margin:auto;padding:12px 14px 92px}.sites{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}.site{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;font-weight:800;text-align:center}.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}.filters{display:grid;grid-template-columns:2.4fr 1fr .7fr .7fr 1.2fr 1fr;gap:10px}label{display:block;color:var(--muted);font-size:11px;margin:0 0 4px}input,select,textarea{width:100%;padding:11px;border:1px solid #cdd7e4;border-radius:9px;background:#fff;font-size:15px}.toggles{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-top:10px}.toggles label{font-size:12px;color:var(--text);display:flex;gap:6px;align-items:center;margin:0}.toggles input{width:auto}.btn{border:0;border-radius:9px;padding:11px 15px;font-weight:850;background:#edf1f6;color:var(--text)}.btn.primary{background:var(--blue);color:#fff}.btn.full{width:100%}.searchrow{display:grid;grid-template-columns:1fr 310px;gap:12px;align-items:end;margin-top:10px}.summary{display:grid;grid-template-columns:1.2fr repeat(5,1fr);gap:10px;margin-bottom:12px}.sum,.box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}.sum small{color:var(--muted);display:block}.sum b{font-size:24px}.buy b{color:var(--green)}.watch b{color:var(--orange)}.pass b{color:var(--red)}.rules{display:grid;grid-template-columns:2fr 1.1fr;gap:12px;margin-bottom:12px}.box{font-size:12px;line-height:1.7}.box.good{background:#edf7ff;border-color:#9ec9ff}.box.warn{background:#fff2f1;border-color:#ffc4bf}.box h3{margin:0 0 6px;font-size:14px}.tabs{display:flex;gap:8px;margin:8px 0}.tabs button{flex:1}.result{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}.row{display:grid;grid-template-columns:2fr .8fr 1fr 1fr 1fr .8fr;border-top:1px solid #edf1f5}.row:first-child{border-top:0}.cell{padding:12px;min-width:0}.muted{font-size:11px;color:var(--muted);line-height:1.5}.badge{font-weight:900}.badge.buy{color:var(--green)}.badge.watch{color:var(--orange)}.badge.pass{color:var(--red)}.hide{display:none!important}.status{font-size:12px;color:var(--muted);margin-top:8px;min-height:18px}.status.error{color:var(--red);font-weight:800}.small{font-size:12px;color:var(--muted)}#bootBanner{background:#fff8dd;border:1px solid #f1d77b;border-radius:10px;padding:9px 12px;margin-bottom:10px;font-size:12px}.okboot{background:#eaf8ef!important;border-color:#9bd6ad!important;color:#126b35}.errboot{background:#fff0ef!important;border-color:#ffb6b1!important;color:#b42318}.noscript{background:#fff0ef;border:1px solid #ffb6b1;color:#b42318;border-radius:10px;padding:12px;margin:10px 14px;font-size:13px;font-weight:800}nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:7px 10px calc(7px + env(safe-area-inset-bottom));display:flex;gap:8px;z-index:20}nav button{flex:1;border:0;border-radius:10px;padding:11px;font-weight:850}nav .active{background:#dbeafe;color:#1d4ed8}@media(max-width:900px){.filters{grid-template-columns:1fr 1fr}.searchrow{grid-template-columns:1fr}.summary{grid-template-columns:repeat(2,1fr)}.rules{grid-template-columns:1fr}.sites{grid-template-columns:repeat(2,1fr)}.row{display:block}.cell{padding:8px 12px}}
+html,body{height:100%;margin:0;background:#f4f7fb;color:#142238;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}.card{width:min(560px,100%);background:#fff;border:1px solid #dce4ee;border-radius:16px;padding:24px;box-sizing:border-box;box-shadow:0 8px 30px rgba(16,37,65,.08)}h1{margin:0 0 8px;font-size:24px}.status{margin:12px 0;padding:12px;border-radius:10px;background:#eaf8ef;border:1px solid #9bd6ad;color:#126b35;font-weight:800}.small{font-size:13px;line-height:1.7;color:#68758a}a{display:block;margin-top:16px;padding:13px 16px;border-radius:10px;background:#1473e6;color:#fff;text-align:center;text-decoration:none;font-weight:850}
 </style>
 </head>
 <body>
-<noscript><div class="noscript">JavaScriptが無効のため、せどりAIを起動できません。SafariのJavaScript設定を有効にしてください。</div></noscript>
-<header><div class="head"><div class="brand"><h1>🛒 せどりAI <small style="font-size:12px">v14.6.2 repair</small></h1><p>5サイト同時検索・利益判定AI｜現在相場＋過去データ予測</p></div><div class="chips"><span class="chip" id="bridgeChip">● Userscripts 確認中</span><span class="chip">● 判定エンジン</span><span class="chip">● 過去データ予測</span></div></div></header>
-<div class="wrap"><div id="bootBanner">v14.6.2 repair JavaScript起動確認中…</div><section id="searchPanel">
-<div class="sites"><div class="site">✓ メルカリ</div><div class="site">✓ Yahoo!フリマ</div><div class="site">✓ ジモティー</div><div class="site">✓ Yahoo!オークション</div><div class="site">✓ 楽天ラクマ</div></div>
-<div class="panel"><div class="filters"><div><label>ブランド・商品名・型番</label><input id="searchQ" placeholder="例：カルティエ ラブリング K18 11号" enterkeyhint="search"></div><div><label>カテゴリ</label><select id="searchCategory"><option value="all">すべて</option><option>アクセサリー</option><option>財布</option><option>バッグ</option><option>家電・デジタル</option></select></div><div><label>最低価格</label><input id="searchMin" type="number" value="0"></div><div><label>最高価格</label><input id="searchMax" type="number" value="45000"></div><div><label>商品の状態</label><select id="searchCondition"><option value="all">すべて</option><option value="new">新品・未使用</option><option value="good" selected>目立つ傷や汚れなし以上</option><option value="used">傷や汚れありを含む</option></select></div><div><label>並び順</label><select id="searchSort"><option value="newest">新着順</option><option value="price_asc">価格の安い順</option><option value="price_desc">価格の高い順</option></select></div></div>
-<div class="searchrow"><div class="toggles"><label><input id="searchOnSale" type="checkbox" checked>販売中のみ</label><label><input id="searchExcludeAds" type="checkbox" checked>広告・業者枠を除外</label><label><input id="auctionEstimate" type="checkbox" checked>オークションは落札見込価格で判定</label><label><input id="strictMarket" type="checkbox" checked>低信頼予測は要確認</label></div><button id="bulkSearchBtn" class="btn primary full">🔎 5サイトを一括検索</button></div><div id="searchStatus" class="status">アプリを起動しています…</div></div>
-<div id="summary" class="summary hide"></div>
-<div class="rules"><div class="box good"><h3>✓ 利益計算・質問・販売文・自動追加収集</h3>✓ 現在相場＋180日観測履歴から安全側の予測販売価格を算出<br>✓ 販売手数料・送料・純利益・ROIを商品ごとに分離計算<br>✓ データ不足時は検索語を自動で広げて追加収集<br>✓ 商品ごとに確認質問と販売文を自動生成<br>✓ 型番・容量・素材・サイズ違いの誤比較を抑止</div><div class="box warn"><h3>⚠ 判定ルール</h3>予測価格は実売保証ではありません。<br>送料は自動推定または固定値です。<br>販売手数料は設定した販売先の安全側料率で計算します。<br>低信頼・相場不足・異常ROIは自動で要確認に落とします。</div></div>
-<div class="tabs"><button class="btn primary" data-filter="all">すべて</button><button class="btn" data-filter="buy">仕入候補</button><button class="btn" data-filter="watch">要確認</button><button class="btn" data-filter="hold">保留</button><button class="btn" data-filter="pass">見送り</button></div><div id="candidateResults" class="result hide"></div></section>
-<section id="judgePanel" class="hide"><div class="panel"><h2>詳細判定</h2><p class="small">検索結果から確認します。</p><div id="resultCard" style="display:none"><div id="verdict"></div><div id="profit"></div><div id="margin"></div><div id="maxBuy"></div><div id="score"></div><p id="reason"></p></div></div></section>
-<section id="historyPanel" class="hide"><div class="panel"><h2>保存候補</h2><span id="historyCount" class="small"></span><div id="history"></div></div></section>
-<section id="settingsPanel" class="hide"><div class="panel"><h2>設定</h2><div class="filters"><div><label>最低純利益</label><input id="minProfit" type="number" value="3000"></div><div><label>最低ROI</label><input id="minRoi" type="number" value="30"></div><div><label>要確認利益</label><input id="watchProfit" type="number" value="1500"></div><div><label>要確認ROI</label><input id="watchRoi" type="number" value="15"></div><div><label>候補上限</label><input id="maxCandidates" type="number" value="50"></div></div><button class="btn primary" id="saveSettingsBtn" style="margin-top:10px">設定保存</button><button class="btn" id="checkLoginBtn" style="margin-top:10px">5サイトのログイン状態を確認</button><div id="loginResults"></div></div></section></div>
-<nav><button class="active" data-tab="search">検索</button><button data-tab="judge">判定</button><button data-tab="history">候補</button><button data-tab="settings">設定</button></nav>
+<main><div class="card"><h1>せどりAI v14.6.3</h1><div id="status" class="status">最新版へ切り替えています…</div><div class="small">Safariの白画面原因になりやすい旧キャッシュとService Workerを解除して、自己完結版を起動します。</div><a href="./launch-v1463.html?force=1">復旧起動ページを開く</a><noscript><div class="small">JavaScriptが無効です。上のボタンを押してください。</div></noscript></div></main>
 <script>
 (function(){
   'use strict';
-  var bootStarted=Date.now();
-  function el(id){return document.getElementById(id);}
-  function setBanner(text,kind){var b=el('bootBanner');if(!b)return;b.textContent=text;b.className=kind||'';}
-  function setStatus(text,isError){var s=el('searchStatus');if(!s)return;s.textContent=text;s.className='status'+(isError?' error':'');}
-  window.__SEDORI_BOOT_LOADED__=true;
-  setBanner('✓ JavaScript起動済み。判定エンジン読込中…','okboot');
-  setStatus('判定エンジンを読み込んでいます…',false);
-
+  var target='./launch-v1463.html?from=index&v=1463-20260906';
+  var done=false;
+  function go(){if(done)return;done=true;window.location.replace(target);}
   try{
-    if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(regs){for(var i=0;i<regs.length;i++){try{regs[i].unregister();}catch(e){}}}).catch(function(){});}
-    if(window.caches&&caches.keys){caches.keys().then(function(keys){for(var i=0;i<keys.length;i++){if(String(keys[i]).indexOf('sedori-ai-')===0){try{caches.delete(keys[i]);}catch(e){}}}}).catch(function(){});}
-  }catch(e){}
-
-  function bindTabs(){
-    var nav=document.querySelectorAll('nav button[data-tab]');
-    for(var i=0;i<nav.length;i++)nav[i].onclick=function(){var tab=this.getAttribute('data-tab');for(var j=0;j<nav.length;j++)nav[j].classList.toggle('active',nav[j]===this);var names=['search','judge','history','settings'];for(var k=0;k<names.length;k++){var p=el(names[k]+'Panel');if(p)p.classList.toggle('hide',names[k]!==tab);}};
-    var filters=document.querySelectorAll('.tabs button[data-filter]');
-    for(var a=0;a<filters.length;a++)filters[a].onclick=function(){var f=this.getAttribute('data-filter');for(var b=0;b<filters.length;b++)filters[b].classList.toggle('primary',filters[b]===this);var rows=document.querySelectorAll('#candidateResults .row');for(var c=0;c<rows.length;c++)rows[c].style.display=(f==='all'||rows[c].getAttribute('data-v')===f)?'':'none';};
-  }
-  bindTabs();
-
-  window.__sedoriAppScriptError=function(){setBanner('判定エンジンのファイル読込に失敗しました。','errboot');setStatus('起動エラー：app.jsを読み込めません。',true);};
-  window.addEventListener('error',function(ev){var src=ev&&ev.filename?String(ev.filename):'';if(src.indexOf('app.js')>=0||!window.__SEDORI_ENGINE__){setBanner('JavaScript実行エラー：'+(ev.message||'不明'),'errboot');setStatus('起動エラー：'+(ev.message||'不明'),true);}});
-
-  function verify(){
-    if(window.__SEDORI_ENGINE__){setBanner('✓ 起動正常・検索できます','okboot');if(String(el('searchStatus')&&el('searchStatus').textContent||'').indexOf('読み込')>=0||String(el('searchStatus')&&el('searchStatus').textContent||'').indexOf('起動')>=0)setStatus('準備完了。検索できます。',false);return;}
-    if(Date.now()-bootStarted<7000){setTimeout(verify,250);return;}
-    setBanner('判定エンジンを起動できませんでした。エラー表示を確認してください。','errboot');setStatus('起動エラー：判定エンジンが実行されていません。',true);
-  }
-  setTimeout(verify,250);
+    if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistrations){
+      navigator.serviceWorker.getRegistrations().then(function(regs){for(var i=0;i<regs.length;i++){try{regs[i].unregister();}catch(e){}}}).then(go).catch(go);
+      setTimeout(go,1200);
+    }else{setTimeout(go,50);}
+  }catch(e){setTimeout(go,50);}
 })();
 </script>
-<script src="./app.js?v=1462-repair-1" onerror="window.__sedoriAppScriptError&&window.__sedoriAppScriptError()"></script>
 </body>
 </html>

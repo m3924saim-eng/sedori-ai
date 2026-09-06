@@ -1,10 +1,10 @@
 {
   "name":"せどりAIエージェント",
   "short_name":"せどりAI",
-  "start_url":"./",
+  "start_url":"./launch-v1463.html?homescreen=1",
   "display":"standalone",
-  "background_color":"#f5f7fb",
-  "theme_color":"#111827",
+  "background_color":"#f4f7fb",
+  "theme_color":"#102541",
   "lang":"ja",
   "icons":[
     {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},

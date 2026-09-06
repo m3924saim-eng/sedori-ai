@@ -10,7 +10,7 @@ const document={readyState:'complete',title:'',documentElement:html,getElementBy
 const store=new Map();let timers=[];
 const context={window:{},document,localStorage:{getItem:k=>store.has(k)?store.get(k):null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},console,setTimeout:(fn)=>{timers.push(fn);return timers.length},clearTimeout:()=>{},setInterval:()=>0,clearInterval:()=>{},MutationObserver:function(cb){observerCb=cb;this.observe=()=>{}},Date,Math,Number,String,Object,Array,Set,Map,JSON,RegExp,URL,Blob};context.window=context;context.window.document=document;context.globalThis=context;
 vm.createContext(context);vm.runInContext(fs.readFileSync('./app.js','utf8'),context,{filename:'app.js'});
-const E=context.__SEDORI_ENGINE__;assert(E);assert.equal(E.version,'14.6.0');assert.equal(document.title,'せどりAI v14.6.0');assert(/接続済み/.test(el('bridgeChip').textContent));
+const E=context.__SEDORI_ENGINE__;assert(E);assert.equal(E.version,'14.6.2');assert.equal(document.title,'せどりAI v14.6.2');assert(/接続済み/.test(el('bridgeChip').textContent));
 assert(el('bulkSearchBtn').listeners.click,'search click binding missing');el('bulkSearchBtn').listeners.click();
 const cmd=nodes.get('sedoriBridgeCommand');assert(cmd,'search command not created');const cp=JSON.parse(cmd.textContent);assert.equal(cp.type,'search');assert.equal(cp.filters.query,'カルティエ ラブリング K18 11号');assert(el('bulkSearchBtn').disabled===true);
 assert(E.identityScore('iPhone 15 Pro 256GB','iPhone 15 Pro Max 256GB')<70);
@@ -19,4 +19,4 @@ const s={shippingMode:'auto',shippingCost:750,saleSite:'mercari'};const eco=E.ec
 assert(/刻印|重量/.test(E.generateQuestions({title:'K18 リング',rawText:''})));assert(E.generateListing({title:'ブランド 財布',condition:'good'},{expectedSell:15000}).description.includes('発送'));
 const result=mk('sedoriBridgeResult');result.textContent=JSON.stringify({searchSeq:cp.searchSeq,filters:cp.filters,items:[{source:'mercari',title:'カルティエ ラブリング K18 11号',price:10000,url:'u1',condition:'good'},{source:'rakuma',title:'カルティエ ラブリング K18 11号 箱付',price:19000,url:'u2',condition:'good'},{source:'yahoo_fleamarket',title:'Cartier ラブリング K18 11号',price:20000,url:'u3',condition:'good'}]});nodes.set(result.id,result);assert(observerCb,'observer not bound');observerCb();
 assert(/カルティエ/.test(el('candidateResults').innerHTML),'results not rendered');assert(/検索完了/.test(el('searchStatus').textContent),'completion status missing');assert(el('bulkSearchBtn').disabled===false,'button not re-enabled');
-console.log('v14.6.0 interaction smoke tests passed');
+console.log('v14.6.2 engine interaction smoke tests passed');

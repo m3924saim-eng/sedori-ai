@@ -32,21 +32,42 @@ jobs:
           grep -F 'bulkSearchBtn' app.js
           grep -F 'sedoriBridgeCommand' sedori-ai.user.js
           grep -F 'sedoriBridgeResult' sedori-ai.user.js
-      - name: Version and cache consistency
+      - name: Startup architecture consistency
         run: |
           python - <<'PY'
           import re
           from pathlib import Path
-          app=Path('app.js').read_text(encoding='utf-8')
-          idx=Path('index.html').read_text(encoding='utf-8')
-          sw=Path('sw.js').read_text(encoding='utf-8')
-          av=re.search(r"VERSION='([^']+)'",app)
-          iv=re.search(r'<title>せどりAI v([^<]+)</title>',idx)
-          if not av or not iv: raise SystemExit('version marker missing')
-          if av.group(1)!=iv.group(1): raise SystemExit(f'version mismatch app={av.group(1)} index={iv.group(1)}')
-          digits=av.group(1).replace('.','')
-          if f'app.js?v={digits}' not in idx: raise SystemExit('index cache buster mismatch')
-          if f"sedori-ai-v{digits}" not in sw: raise SystemExit('service worker cache mismatch')
-          if f'./app.js?v={digits}' not in sw: raise SystemExit('service worker app cache mismatch')
-          print('version/cache OK',av.group(1))
+
+          app = Path('app.js').read_text(encoding='utf-8')
+          idx = Path('index.html').read_text(encoding='utf-8')
+          sw = Path('sw.js').read_text(encoding='utf-8')
+
+          av = re.search(r"VERSION='([^']+)'", app)
+          if not av:
+              raise SystemExit('app version marker missing')
+
+          # index.html is now only a cache-proof launcher. It may have a shell
+          # version newer than the engine version, so do not require equality.
+          target = re.search(r"target=['\"]\.\/([^?'\"]+)", idx)
+          if not target:
+              raise SystemExit('cache-proof startup target missing')
+          startup = Path(target.group(1))
+          if not startup.exists():
+              raise SystemExit(f'startup file missing: {startup}')
+
+          shell = startup.read_text(encoding='utf-8')
+          if './app.js?v=' not in shell:
+              raise SystemExit('startup page does not load app.js with cache buster')
+          if 'boot-v1461.js' not in shell:
+              raise SystemExit('startup page does not load boot monitor')
+          if 'window.__SEDORI_ENGINE__' not in shell:
+              raise SystemExit('startup page does not verify engine startup')
+
+          # sw.js is intentionally a retiring worker: it clears stale caches,
+          # unregisters itself, and forces network-only while old tabs remain.
+          for marker in ['caches.keys()', 'registration.unregister()', "cache: 'no-store'"]:
+              if marker not in sw:
+                  raise SystemExit(f'retiring service worker marker missing: {marker}')
+
+          print('startup architecture OK', 'engine='+av.group(1), 'shell='+startup.name)
           PY

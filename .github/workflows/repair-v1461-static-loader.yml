@@ -1,4 +1,4 @@
-name: Repair v14.6.0 Safari static loader
+name: Repair v14.6.2 Safari inline bundle
 on:
   push:
     branches: [main]
@@ -6,37 +6,60 @@ permissions:
   contents: write
 jobs:
   repair:
-    if: contains(github.event.head_commit.message, '[repair-v1461]')
+    if: contains(github.event.head_commit.message, '[repair-v1462]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Replace hanging dynamic loader with static scripts
+      - name: Build self-contained Safari page
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-          start=s.find('\n<script>\n(function(){')
-          end=s.find('\n</script>\n</body>', start)
-          if start < 0 or end < 0:
-              raise SystemExit('index dynamic loader block not found')
-          replacement='\n<script src="./app.js?v=1460"></script>\n<script src="./boot-v1461.js?v=1461"></script>'
-          s=s[:start]+replacement+s[end+len('\n</script>'):]
-          p.write_text(s, encoding='utf-8')
+
+          index_path = Path('index.html')
+          app_path = Path('app.js')
+          boot_path = Path('boot-v1461.js')
+
+          s = index_path.read_text(encoding='utf-8')
+          app = app_path.read_text(encoding='utf-8')
+          boot = boot_path.read_text(encoding='utf-8')
+
+          # Keep the engine version and visible UI version aligned.
+          app = app.replace("const VERSION='14.6.0'", "const VERSION='14.6.2'", 1)
+          app_path.write_text(app, encoding='utf-8')
+          s = s.replace('v14.6.0', 'v14.6.2')
+
+          old = '<script src="./app.js?v=1460"></script>\n<script src="./boot-v1461.js?v=1461"></script>'
+          if old not in s:
+              raise SystemExit('static loader block not found')
+
+          # Inline both files. This removes Safari/GitHub Pages external-script loading
+          # from the startup path and also makes a unique fresh URL possible.
+          bundled = '<script>\n' + app + '\n</script>\n<script>\n' + boot + '\n</script>'
+          s = s.replace(old, bundled, 1)
+
+          # Add an unmistakable inline marker before the bundled engine.
+          marker = '<div id="bootBanner">起動確認中…</div>'
+          marker2 = '<div id="bootBanner">v14.6.2 JavaScript起動確認中…</div>'
+          s = s.replace(marker, marker2, 1)
+
+          index_path.write_text(s, encoding='utf-8')
+          Path('fresh-1462.html').write_text(s, encoding='utf-8')
           PY
-      - name: Validate repaired startup
+      - name: Validate bundled startup
         run: |
           node --check app.js
           node --check boot-v1461.js
-          grep -F '<script src="./app.js?v=1460"></script>' index.html
-          grep -F '<script src="./boot-v1461.js?v=1461"></script>' index.html
-          grep -F "window.__SEDORI_ENGINE__" app.js
+          grep -F "const VERSION='14.6.2'" app.js
+          grep -F 'v14.6.2 JavaScript起動確認中' index.html
+          grep -F 'window.__SEDORI_ENGINE__' index.html
+          test -f fresh-1462.html
+          if grep -Fq '<script src="./app.js' index.html; then exit 1; fi
       - name: Commit repair
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "fix: use static Safari engine loader"
+          git add index.html app.js fresh-1462.html
+          git commit -m "fix: inline Safari engine bundle v14.6.2"
           git push

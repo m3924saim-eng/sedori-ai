@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102541">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="manifest" href="./manifest.webmanifest?v=1463">
+<title>せどりAI v14.6.3 復旧起動</title>
+<style>
+html,body{height:100%;margin:0;background:#f4f7fb;color:#142238;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}.card{width:min(560px,100%);background:#fff;border:1px solid #dce4ee;border-radius:16px;padding:24px;box-shadow:0 8px 30px rgba(16,37,65,.08)}h1{margin:0 0 8px;font-size:24px}.status{margin:12px 0;padding:12px;border-radius:10px;background:#eaf8ef;border:1px solid #9bd6ad;color:#126b35;font-weight:800}.small{font-size:13px;line-height:1.7;color:#68758a}a{display:block;margin-top:16px;padding:13px 16px;border-radius:10px;background:#1473e6;color:#fff;text-align:center;text-decoration:none;font-weight:850}
+</style>
+</head>
+<body>
+<main><div class="card"><h1>せどりAI v14.6.3</h1><div id="status" class="status">Safariの古いキャッシュを解除して最新版を起動しています…</div><div class="small">この画面は白画面対策専用の起動ページです。キャッシュと旧Service Workerを解除後、自己完結版へ切り替えます。</div><a id="manual" href="./fresh-1462.html?force=1463-20260906">切り替わらない場合はここを押す</a><noscript><div class="small">JavaScriptが無効です。上のボタンから自己完結版を開いてください。</div></noscript></div></main>
+<script>
+(function(){
+  'use strict';
+  var target='./fresh-1462.html?force=1463-20260906-1930';
+  var status=document.getElementById('status');
+  var finished=false;
+  function go(){if(finished)return;finished=true;if(status)status.textContent='キャッシュ解除完了。せどりAIを開きます…';window.location.replace(target);}
+  var tasks=[];
+  try{
+    if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistrations){
+      tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs){
+        var a=[];for(var i=0;i<regs.length;i++){try{a.push(regs[i].unregister());}catch(e){}}
+        return Promise.all(a);
+      }));
+    }
+  }catch(e){}
+  try{
+    if(window.caches&&caches.keys){
+      tasks.push(caches.keys().then(function(keys){
+        var a=[];for(var i=0;i<keys.length;i++){try{a.push(caches.delete(keys[i]));}catch(e){}}
+        return Promise.all(a);
+      }));
+    }
+  }catch(e){}
+  if(typeof Promise!=='undefined'&&tasks.length){Promise.all(tasks).then(go).catch(go);setTimeout(go,1800);}else{setTimeout(go,80);}
+})();
+</script>
+</body>
+</html>

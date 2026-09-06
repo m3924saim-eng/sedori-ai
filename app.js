@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const VERSION='14.6.0',TIMEOUT=65000,K='sedori_settings_v1460',HK='sedori_market_history_v1460',CK='sedori_search_context_v1460',EK='sedori_enrich_v1460';
+const VERSION='14.6.2',TIMEOUT=65000,K='sedori_settings_v1460',HK='sedori_market_history_v1460',CK='sedori_search_context_v1460',EK='sedori_enrich_v1460';
 const S={mercari:'メルカリ',rakuma:'楽天ラクマ',yahoo_fleamarket:'Yahoo!フリマ',yahoo_auction:'Yahoo!オークション',jmty:'ジモティー'},F={mercari:.10,yahoo_fleamarket:.05,rakuma:.10,yahoo_auction:.10,jmty:0};
 const $=id=>document.getElementById(id),yen=n=>'¥'+Math.round(+n||0).toLocaleString('ja-JP'),pct=n=>(Math.round((+n||0)*10)/10)+'%';let timer=0,seq=0,active=0,ctx=null;
 const read=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch{return d}},write=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}};

@@ -27,7 +27,9 @@ jobs:
           grep -F "cmd('search'" app.js
           grep -F 'sedoriBridgeCommand' sedori-ai.user.js
           grep -F 'sedoriBridgeResult' sedori-ai.user.js
-          grep -F 'app.js?v=1460' index.html
+          grep -F "app.js?v=" index.html
+          grep -F "'/sedori-ai/'" index.html
+          grep -F 'window.__SEDORI_ENGINE__' index.html
       - name: Functional smoke test
         run: node test-v1460.js
       - name: Version consistency
@@ -44,7 +46,7 @@ jobs:
               raise SystemExit('version not found')
           if av.group(1) != iv.group(1):
               raise SystemExit(f'version mismatch: app={av.group(1)} index={iv.group(1)}')
-          if "sedori-ai-v1460" not in sw:
-              raise SystemExit('service worker cache mismatch')
+          if 'registration.unregister' not in sw or "cache: 'no-store'" not in sw:
+              raise SystemExit('retired service worker safety check failed')
           print('version OK:', av.group(1))
           PY

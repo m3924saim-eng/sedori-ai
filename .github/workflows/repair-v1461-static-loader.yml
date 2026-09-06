@@ -1,0 +1,53 @@
+name: Repair v14.6.0 Safari static loader
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  repair:
+    if: contains(github.event.head_commit.message, '[repair-v1461]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace hanging dynamic loader with static scripts
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          start=s.find('\n<script>\n(function(){')
+          end=s.find('\n</script>\n</body>', start)
+          if start < 0 or end < 0:
+              raise SystemExit('index dynamic loader block not found')
+          replacement='\n<script src="./app.js?v=1460"></script>\n<script src="./boot-v1461.js?v=1461"></script>'
+          s=s[:start]+replacement+s[end+len('\n</script>'):]
+          p.write_text(s, encoding='utf-8')
+
+          # The service worker is intentionally retired in v14.6.0. Keep CI aligned
+          # with that design instead of requiring an obsolete cache manifest.
+          t=Path('.github/workflows/test-v9.yml')
+          q=t.read_text(encoding='utf-8')
+          old="""          if f\"sedori-ai-v{digits}\" not in sw: raise SystemExit('service worker cache mismatch')\n          if f'./app.js?v={digits}' not in sw: raise SystemExit('service worker app cache mismatch')\n"""
+          new="""          retired = ('unregister' in sw and \"cache: 'no-store'\" in sw)\n          if not retired:\n              if f\"sedori-ai-v{digits}\" not in sw: raise SystemExit('service worker cache mismatch')\n              if f'./app.js?v={digits}' not in sw: raise SystemExit('service worker app cache mismatch')\n"""
+          if old not in q:
+              raise SystemExit('test cache consistency block not found')
+          q=q.replace(old,new,1)
+          t.write_text(q, encoding='utf-8')
+          PY
+      - name: Validate repaired startup
+        run: |
+          node --check app.js
+          node --check boot-v1461.js
+          grep -F '<script src="./app.js?v=1460"></script>' index.html
+          grep -F '<script src="./boot-v1461.js?v=1461"></script>' index.html
+          grep -F "window.__SEDORI_ENGINE__" app.js
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/test-v9.yml
+          git commit -m "fix: use static Safari engine loader and align retired SW test"
+          git push

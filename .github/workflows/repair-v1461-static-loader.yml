@@ -24,17 +24,6 @@ jobs:
           replacement='\n<script src="./app.js?v=1460"></script>\n<script src="./boot-v1461.js?v=1461"></script>'
           s=s[:start]+replacement+s[end+len('\n</script>'):]
           p.write_text(s, encoding='utf-8')
-
-          # The service worker is intentionally retired in v14.6.0. Keep CI aligned
-          # with that design instead of requiring an obsolete cache manifest.
-          t=Path('.github/workflows/test-v9.yml')
-          q=t.read_text(encoding='utf-8')
-          old="""          if f\"sedori-ai-v{digits}\" not in sw: raise SystemExit('service worker cache mismatch')\n          if f'./app.js?v={digits}' not in sw: raise SystemExit('service worker app cache mismatch')\n"""
-          new="""          retired = ('unregister' in sw and \"cache: 'no-store'\" in sw)\n          if not retired:\n              if f\"sedori-ai-v{digits}\" not in sw: raise SystemExit('service worker cache mismatch')\n              if f'./app.js?v={digits}' not in sw: raise SystemExit('service worker app cache mismatch')\n"""
-          if old not in q:
-              raise SystemExit('test cache consistency block not found')
-          q=q.replace(old,new,1)
-          t.write_text(q, encoding='utf-8')
           PY
       - name: Validate repaired startup
         run: |
@@ -48,6 +37,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html .github/workflows/test-v9.yml
-          git commit -m "fix: use static Safari engine loader and align retired SW test"
+          git add index.html
+          git commit -m "fix: use static Safari engine loader"
           git push

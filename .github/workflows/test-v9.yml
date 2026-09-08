@@ -51,7 +51,7 @@ jobs:
             'settings restore':'loadSettingsUI' in page,
             'context restore':'restoreContext' in page,
             'image data':'image:item.image' in page,
-            'image markup':r'class=\"thumb\"' in page,
+            'image UI':'.thumb{' in page and '商品画像' in page,
             'userscript image capture':'image:img' in user,
           }
           for name,ok in checks.items():

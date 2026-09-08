@@ -1,0 +1,34 @@
+name: Verify public site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Pages propagation
+        run: sleep 20
+      - name: Verify root page
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 5 --retry-delay 5 --connect-timeout 15 --max-time 60 \
+            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/152.0.0.0 Safari/537.36 Edg/152.0.0.0' \
+            -D root-headers.txt \
+            -o root.html \
+            'https://m3924saim-eng.github.io/sedori-ai/?verify=20260908-1559'
+          grep -F 'せどりAI v14.6.7' root.html
+          cat root-headers.txt
+      - name: Verify app page
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 5 --retry-delay 5 --connect-timeout 15 --max-time 60 \
+            -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/152.0.0.0 Safari/537.36 Edg/152.0.0.0' \
+            -D app-headers.txt \
+            -o app.html \
+            'https://m3924saim-eng.github.io/sedori-ai/fresh-1467.html?verify=20260908-1559'
+          grep -F 'せどりAI' app.html
+          grep -F '5サイトを一括検索' app.html
+          cat app-headers.txt

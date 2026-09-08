@@ -50,7 +50,8 @@ jobs:
             'engine marker':'window.__SEDORI_ENGINE__' in page,
             'settings restore':'loadSettingsUI' in page,
             'context restore':'restoreContext' in page,
-            'image rendering':'image:item.image' in page and 'class=\\"thumb\\"' in page,
+            'image data':'image:item.image' in page,
+            'image markup':r'class=\"thumb\"' in page,
             'userscript image capture':'image:img' in user,
           }
           for name,ok in checks.items():

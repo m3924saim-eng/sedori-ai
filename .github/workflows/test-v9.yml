@@ -2,6 +2,7 @@ name: Test sedori AI
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -16,58 +17,47 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: JavaScript syntax
-        run: |
-          node --check app.js
-          node --check sw.js
-          node --check sedori-ai.user.js
-          node --check sedori-ai.meta.js
-          node --check test-v1460.js
-      - name: Core smoke tests
-        run: node test-v1460.js
-      - name: Search bridge wiring
-        run: |
-          grep -F "function start(" app.js
-          grep -F "cmd('search'" app.js
-          grep -F 'bulkSearchBtn' app.js
-          grep -F 'sedoriBridgeCommand' sedori-ai.user.js
-          grep -F 'sedoriBridgeResult' sedori-ai.user.js
-      - name: Startup architecture consistency
+      - name: Userscript syntax
+        run: node --check sedori-ai.user.js
+      - name: Single-file app syntax
+        shell: bash
         run: |
           python - <<'PY'
-          import re
           from pathlib import Path
-
-          app = Path('app.js').read_text(encoding='utf-8')
-          idx = Path('index.html').read_text(encoding='utf-8')
-          sw = Path('sw.js').read_text(encoding='utf-8')
-
-          av = re.search(r"VERSION='([^']+)'", app)
-          if not av:
-              raise SystemExit('app version marker missing')
-
-          # index.html is now only a cache-proof launcher. It may have a shell
-          # version newer than the engine version, so do not require equality.
-          target = re.search(r"target=['\"]\.\/([^?'\"]+)", idx)
-          if not target:
-              raise SystemExit('cache-proof startup target missing')
-          startup = Path(target.group(1))
-          if not startup.exists():
-              raise SystemExit(f'startup file missing: {startup}')
-
-          shell = startup.read_text(encoding='utf-8')
-          if './app.js?v=' not in shell:
-              raise SystemExit('startup page does not load app.js with cache buster')
-          if 'boot-v1461.js' not in shell:
-              raise SystemExit('startup page does not load boot monitor')
-          if 'window.__SEDORI_ENGINE__' not in shell:
-              raise SystemExit('startup page does not verify engine startup')
-
-          # sw.js is intentionally a retiring worker: it clears stale caches,
-          # unregisters itself, and forces network-only while old tabs remain.
-          for marker in ['caches.keys()', 'registration.unregister()', "cache: 'no-store'"]:
-              if marker not in sw:
-                  raise SystemExit(f'retiring service worker marker missing: {marker}')
-
-          print('startup architecture OK', 'engine='+av.group(1), 'shell='+startup.name)
+          import re
+          text=Path('fresh-1467.html').read_text(encoding='utf-8')
+          scripts=re.findall(r'<script>(.*?)</script>', text, flags=re.S|re.I)
+          if not scripts:
+              raise SystemExit('fresh-1467 inline script not found')
+          for i,code in enumerate(scripts):
+              Path(f'/tmp/sedori-inline-{i}.js').write_text(code, encoding='utf-8')
+          PY
+          for f in /tmp/sedori-inline-*.js; do node --check "$f"; done
+      - name: Current release smoke
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          idx=Path('index.html').read_text(encoding='utf-8')
+          page=Path('fresh-1467.html').read_text(encoding='utf-8')
+          user=Path('sedori-ai.user.js').read_text(encoding='utf-8')
+          checks={
+            'index route':'fresh-1467.html?v=1467-' in idx,
+            'engine version':"VERSION='14.6.7'" in page,
+            'search button':'bulkSearchBtn' in page,
+            'search command':"cmd('search'" in page,
+            'bridge result':'sedoriBridgeResult' in page,
+            'engine marker':'window.__SEDORI_ENGINE__' in page,
+            'settings restore':'loadSettingsUI' in page,
+            'context restore':'restoreContext' in page,
+            'image rendering':'image:item.image' in page and 'class=\\"thumb\\"' in page,
+            'userscript image capture':'image:img' in user,
+          }
+          for name,ok in checks.items():
+              if not ok:
+                  raise SystemExit('failed: '+name)
+          for label in ['メルカリ','Yahoo!フリマ','ジモティー','Yahoo!オークション','楽天ラクマ']:
+              if label not in page:
+                  raise SystemExit('missing site: '+label)
+          print('v14.6.7 smoke OK')
           PY

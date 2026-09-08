@@ -8,23 +8,28 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <link rel="manifest" href="./manifest.webmanifest?v=1464">
-<title>せどりAI v14.6.4</title>
-<style>html,body{height:100%;margin:0;background:#f4f7fb;color:#142238;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}.card{width:min(560px,100%);background:#fff;border:1px solid #dce4ee;border-radius:16px;padding:24px;box-sizing:border-box;box-shadow:0 8px 30px rgba(16,37,65,.08)}h1{margin:0 0 8px;font-size:24px}.status{margin:12px 0;padding:12px;border-radius:10px;background:#eaf8ef;border:1px solid #9bd6ad;color:#126b35;font-weight:800}.small{font-size:13px;line-height:1.7;color:#68758a}a{display:block;margin-top:16px;padding:13px 16px;border-radius:10px;background:#1473e6;color:#fff;text-align:center;text-decoration:none;font-weight:850}</style>
+<title>せどりAI 復旧ランチャー</title>
+<style>
+html,body{min-height:100%;margin:0;background:#f4f7fb;color:#142238;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px;box-sizing:border-box}.card{width:min(620px,100%);background:#fff;border:1px solid #dce4ee;border-radius:16px;padding:22px;box-sizing:border-box;box-shadow:0 8px 30px rgba(16,37,65,.08)}h1{margin:0 0 6px;font-size:24px}.small{font-size:13px;line-height:1.7;color:#68758a}.status{margin:14px 0;padding:12px;border-radius:10px;background:#fff8dd;border:1px solid #f1d77b;font-weight:800}.status.ok{background:#eaf8ef;border-color:#9bd6ad;color:#126b35}.btn{display:block;margin-top:12px;padding:14px 16px;border-radius:10px;background:#1473e6;color:#fff;text-align:center;text-decoration:none;font-weight:850}.btn.alt{background:#102541}.btn.light{background:#eef3f8;color:#142238;border:1px solid #ccd7e5}.steps{margin-top:16px;padding:12px;border-radius:10px;background:#f7f9fc;font-size:13px;line-height:1.7}
+</style>
 </head>
 <body>
-<main><div class="card"><h1>せどりAI v14.6.4</h1><div id="status" class="status">新しい起動ファイルへ切り替えています…</div><div class="small">v14.6.2 のキャッシュを使わず、別ファイル名の v14.6.4 を直接起動します。</div><a href="./fresh-1464.html?direct=1">v14.6.4 を直接開く</a><noscript><div class="small">JavaScriptが無効です。上のボタンから v14.6.4 を直接開けます。</div></noscript></div></main>
+<main><div class="card">
+<h1>せどりAI 復旧ランチャー</h1>
+<div class="small">Safariで検索が動かない場合は、まず連携状態を確認してから本体を開きます。</div>
+<div id="status" class="status">Userscripts連携を確認中…</div>
+<a class="btn" href="./fresh-1464.html?direct=1&recovery=1">せどりAI本体を直接開く</a>
+<a class="btn alt" href="./sedori-ai.user.js">Userscripts連携スクリプトを開く</a>
+<a class="btn light" href="./reset.html">古いキャッシュをリセット</a>
+<div class="steps"><b>iPhone / iPadで検索が動かない場合</b><br>1. 「Userscripts連携スクリプトを開く」を押す<br>2. Userscriptsで「せどりAI 5サイト連携」を有効化<br>3. Safariの拡張機能でUserscriptsをON<br>4. このページに戻り「せどりAI本体を直接開く」<br><br>本体右上が「Userscripts v4.5.1 接続済み」になれば検索できます。</div>
+</div></main>
 <script>
 (function(){
-  'use strict';
-  var target='./fresh-1464.html?from=index&v=1464-20260906-1950';
-  var done=false;
-  function go(){if(done)return;done=true;window.location.replace(target);}
-  try{
-    if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistrations){
-      navigator.serviceWorker.getRegistrations().then(function(regs){var a=[];for(var i=0;i<regs.length;i++){try{a.push(regs[i].unregister());}catch(e){}}return Promise.all(a);}).then(go).catch(go);
-      setTimeout(go,1200);
-    }else{setTimeout(go,30);}
-  }catch(e){setTimeout(go,30);}
+'use strict';
+var s=document.getElementById('status');
+function check(){var v=document.documentElement.dataset.sedoriUserscript||'';if(v){s.textContent='✓ Userscripts v'+v+' 接続済み。せどりAI本体を開けます。';s.className='status ok';}else{s.textContent='Userscripts未接続です。下の「Userscripts連携スクリプトを開く」から再設定してください。';s.className='status';}}
+setTimeout(check,700);setTimeout(check,1800);
+try{if('serviceWorker' in navigator&&navigator.serviceWorker.getRegistrations){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){try{r.unregister()}catch(e){}})})}}catch(e){}
 })();
 </script>
 </body>
